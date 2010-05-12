@@ -1,0 +1,26 @@
+About this file
+---------------
+
+In this file you'll find changes you'll have to do manually if you
+upgrade a gae2django version of Rietveld.
+
+The revision numbers (e.g. r427 at the start of a line) refer to
+Rietveld revision numbers, NOT gae2django revision. You'll find the
+revision of Rietveld you are currently running at the top of
+gae2django's Makefile for the Rietveld example.
+
+Note: Changes for Rietveld versions < 427 (as of July 8th, 2009) are
+not listed here. If something goes wrong it's usually a missing
+database field.
+
+Another note: Depending on the database system you're using to run
+Rietveld on Django, you may need to modify the SQL statements listed
+here.
+
+
+Changes in Rietveld that require database updates
+-------------------------------------------------
+
+r427: New column codereview_issue.private
+
+  ALTER TABLE codereview_issue ADD private BOOLEAN DEFAULT false;

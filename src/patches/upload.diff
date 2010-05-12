@@ -1,0 +1,70 @@
+Index: static/upload.py
+===================================================================
+--- static/upload.py	(Revision 493)
++++ static/upload.py	(Arbeitskopie)
+@@ -260,7 +260,7 @@
+                               response.headers, response.fp)
+     self.authenticated = True
+ 
+-  def _Authenticate(self):
++  def _Authenticate(self, err):
+     """Authenticates the user.
+ 
+     The authentication process works as follows:
+@@ -331,8 +331,10 @@
+     """
+     # TODO: Don't require authentication.  Let the server say
+     # whether it is necessary.
+-    if not self.authenticated:
+-      self._Authenticate()
++    # Skip this check for Django, we need a 401 to get the login
++    # URL (could be anywhere...).
++    #if not self.authenticated:
++    #  self._Authenticate()
+ 
+     old_timeout = socket.getdefaulttimeout()
+     socket.setdefaulttimeout(timeout)
+@@ -368,9 +370,41 @@
+ class HttpRpcServer(AbstractRpcServer):
+   """Provides a simplified RPC-style interface for HTTP requests."""
+ 
+-  def _Authenticate(self):
++  def _Authenticate(self, login_url="/accounts/login/"):
+     """Save the cookie jar after authentication."""
+-    super(HttpRpcServer, self)._Authenticate()
++    login_url = "http://%s%s" % (self.host, login_url)
++    print "Login URL: %r" % login_url
++    username = raw_input("Username: ")
++    password = getpass.getpass("Password: ")
++    fields = (("user_name", username), ("password", password))
++    req = self._CreateRequest(
++        url=login_url,
++        data=urllib.urlencode({
++            "username": username,
++            "password": password,
++        })
++    )
++    try:
++      response = self.opener.open(req)
++      #response_body = response.read()
++      #response_dict = dict(x.split("=")
++      #                     for x in response_body.split("\n") if x)
++      ErrorExit("Login failed.")
++      #return response_dict["Auth"]
++    except urllib2.HTTPError, e:
++      if e.code == 302:
++        self.cookie_jar.extract_cookies(e, req)
++        self.cookie_jar.save()
++        self.authenticated = True
++        return
++      elif e.code == 403:
++        body = e.read()
++        response_dict = dict(x.split("=", 1) for x in body.split("\n") if x)
++        raise ClientLoginError(req.get_full_url(), e.code, e.msg,
++                               e.headers, response_dict)
++      else:
++        raise
++
+     if self.save_cookies:
+       StatusUpdate("Saving authentication cookies to %s" % self.cookie_file)
+       self.cookie_jar.save()
