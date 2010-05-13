@@ -883,12 +883,12 @@ class SubversionVCS(VersionControlSystem):
       ErrorExit("Can't find URL in output from svn info")
     return None
 
-  def unified_diff(self, fromfile, tofile):
+  def unified_diff(self, fromfile, tofile, lines=3):
       fromdate = time.ctime(os.stat(fromfile).st_mtime)
       todate = time.ctime(os.stat(tofile).st_mtime)
       fromlines = open(fromfile, 'U').readlines()
       tolines = open(tofile, 'U').readlines()
-      return difflib.unified_diff(fromfile, tofile)
+      return difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate, n=lines)
 
   def GenerateDiff(self, args):
     cmd = ["svn", "diff"]
