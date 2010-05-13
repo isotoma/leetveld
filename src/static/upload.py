@@ -882,6 +882,13 @@ class SubversionVCS(VersionControlSystem):
       ErrorExit("Can't find URL in output from svn info")
     return None
 
+  def unified_diff(self, fromfile, tofile):
+      fromdate = time.ctime(os.stat(fromfile).st_mtime)
+      todate = time.ctime(os.stat(tofile).st_mtime)
+      fromlines = open(fromfile, 'U').readlines()
+      tolines = open(tofile, 'U').readlines()
+      return difflib.unified_diff(fromfile, tofile)
+
   def GenerateDiff(self, args):
     cmd = ["svn", "diff"]
     if self.options.revision:
@@ -897,7 +904,7 @@ class SubversionVCS(VersionControlSystem):
       #put in a line containing the file's name, as the SVN diff would
       data = "Index: " + name_of_file_for_review +"\n\n";
       #data += RunShell(diff_cmd)
-      diff_result = difflib.unified_diff(get_empty_file_path(), name_of_file_for_review)
+      diff_result = self.unified_diff(get_empty_file_path(), name_of_file_for_review)
       for diff_line in diff_result:
         data += diff_line
       #get the name of the file in args to add to the start of the diff output so it meets SVN's reqts
