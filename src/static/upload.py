@@ -44,7 +44,7 @@ import sys
 import urllib
 import urllib2
 import urlparse
-#import diff
+import difflib
 
 # The md5 module was deprecated in Python 2.5.
 try:
@@ -897,7 +897,7 @@ class SubversionVCS(VersionControlSystem):
       #put in a line containing the file's name, as the SVN diff would
       data = "Index: " + name_of_file_for_review +"\n\n";
       #data += RunShell(diff_cmd)
-      diff_result = diff.unified_diff(get_empty_file_path(), name_of_file_for_review)
+      diff_result = difflib.unified_diff(get_empty_file_path(), name_of_file_for_review)
       for diff_line in diff_result:
         data += diff_line
       #get the name of the file in args to add to the start of the diff output so it meets SVN's reqts
