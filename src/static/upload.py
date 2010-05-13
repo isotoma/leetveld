@@ -165,7 +165,9 @@ class AbstractRpcServer(object):
         If False, use an in-memory cookiejar instead.  Subclasses must
         implement this functionality.  Defaults to False.
     """
-    self.host = host
+    host_parts = host.split("://")
+    self.protocol = host_parts[0]
+    self.host = host_parts[1]
     self.host_override = host_override
     self.auth_function = auth_function
     self.authenticated = False
@@ -250,8 +252,9 @@ class AbstractRpcServer(object):
     # This is a dummy value to allow us to identify when we're successful.
     continue_location = "http://localhost/"
     args = {"continue": continue_location, "auth": auth_token}
-    req = self._CreateRequest("https://%s/_ah/login?%s" %
-                              (self.host, urllib.urlencode(args)))
+    req = self._CreateRequest("%s://%s/_ah/login?%s" %
+                              (self.protocol, self.host,
+                               urllib.urlencode(args)))
     try:
       response = self.opener.open(req)
     except urllib2.HTTPError, e:
@@ -345,7 +348,7 @@ class AbstractRpcServer(object):
       while True:
         tries += 1
         args = dict(kwargs)
-        url = "https://%s%s" % (self.host, request_path)
+        url = "%s://%s%s" % (self.protocol, self.host, request_path)
         if args:
           url += "?" + urllib.urlencode(args)
         req = self._CreateRequest(url=url, data=payload)
@@ -374,7 +377,7 @@ class HttpRpcServer(AbstractRpcServer):
 
   def _Authenticate(self, login_url="/accounts/login/"):
     """Save the cookie jar after authentication."""
-    login_url = "https://%s%s" % (self.host, login_url)
+    login_url = "%s://%s%s" % (self.protocol, self.host, login_url)
     print "Login URL: %r" % login_url
     req = self._CreateRequest(url=login_url)
     response = self.opener.open(req)
@@ -465,9 +468,10 @@ group.add_option("--noisy", action="store_const", const=3,
 # Review server
 group = parser.add_option_group("Review server options")
 group.add_option("-s", "--server", action="store", dest="server",
-                 default="codereview.isotoma.com",
+                 default="https://codereview.isotoma.com",
                  metavar="SERVER",
-                 help=("The server to upload to. The format is host[:port]. "
+                 help=("The server to upload to. "
+                       "The format is protocol://host[:port]. "
                        "Defaults to '%default'."))
 group.add_option("-e", "--email", action="store", dest="email",
                  metavar="EMAIL", default=None,
