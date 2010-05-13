@@ -45,6 +45,7 @@ import urllib
 import urllib2
 import urlparse
 import difflib
+import time
 
 # The md5 module was deprecated in Python 2.5.
 try:
