@@ -352,7 +352,7 @@ class Patch(db.Model):
           msg = 'Bad content. Try to upload again.'
           logging.warn('Patch.get_content: %s', msg)
           raise engine.FetchError(msg)
-        if self.content.is_uploaded and self.content.text == None:
+        if self.content.is_uploaded and self.text == None:
           msg = 'Upload in progress.'
           logging.warn('Patch.get_content: %s', msg)
           raise engine.FetchError(msg)
