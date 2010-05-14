@@ -4,9 +4,7 @@ from django.contrib.sites.models import Site
 
 from django.db import models
 
-from codereview import models as foo_models
-
-class Issue(models.Model):
+class FakeIssue(models.Model):
     """Fake Issue model that admin will understand
     """
     subject = models.CharField()
@@ -28,10 +26,10 @@ class Issue(models.Model):
         verbose_name = "Issue"
         verbose_name_plural = "Issues"
 
-class PatchSet(models.Model):
+class FakePatchSet(models.Model):
     """Fake PatchSet model that admin will understand
     """
-    issue = models.ForeignKey(Issue)  # == parent
+    issue = models.ForeignKey(FakeIssue)  # == parent
     message = models.CharField()
     data = models.FileField()
     url = models.URLField()
@@ -47,11 +45,11 @@ class PatchSet(models.Model):
         verbose_name_plural = "PatchSets"
 
 # Patch in some simple lambda's, Django uses them.
-Issue.__unicode__ = lambda self: self.subject
-PatchSet.__unicode__ = lambda self: self.message or ''
+FakeIssue.__unicode__ = lambda self: self.subject
+FakePatchSet.__unicode__ = lambda self: self.message or ''
 
 class PatchSetInlineAdmin(admin.TabularInline):
-    model = PatchSet
+    model = FakePatchSet
 
 class PatchSetAdmin(admin.ModelAdmin):
     list_filter = ('issue', 'owner')
@@ -64,8 +62,8 @@ class IssueAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'subject')
     inlines = [PatchSetInlineAdmin]
 
-admin.site.register(Issue, IssueAdmin)
-admin.site.register(PatchSet, PatchSetAdmin)
+admin.site.register(FakeIssue, IssueAdmin)
+admin.site.register(FakePatchSet, PatchSetAdmin)
 
 admin.site.unregister(Site)
 
