@@ -56,6 +56,7 @@ from django.shortcuts import render_to_response
 import django.template
 from django.utils import simplejson
 from django.utils.safestring import mark_safe
+from django.contrib.auth.forms import PasswordChangeForm
 
 # Local imports
 import models
@@ -2758,52 +2759,67 @@ def branch_delete(request, branch_id):
 @xsrf_required
 def settings(request):
   account = models.Account.current_user_account
-  if request.method != 'POST':
-    nickname = account.nickname
-    default_context = account.default_context
-    default_column_width = account.default_column_width
-    form = SettingsForm(initial={'nickname': nickname,
-                                 'context': default_context,
-                                 'column_width': default_column_width,
-                                 'notify_by_email': account.notify_by_email,
-                                 'notify_by_chat': account.notify_by_chat,
-                                 })
-    chat_status = None
-    if account.notify_by_chat:
-      try:
-        presence = xmpp.get_presence(account.email)
-      except Exception, err:
-        logging.error('Exception getting XMPP presence: %s', err)
-        chat_status = 'Error (%s)' % err
-      else:
-        if presence:
-          chat_status = 'online'
-        else:
-          chat_status = 'offline'
-    return respond(request, 'settings.html', {'form': form,
-                                              'chat_status': chat_status})
-  form = SettingsForm(request.POST)
-  if form.is_valid():
-    account.nickname = form.cleaned_data.get('nickname')
-    account.default_context = form.cleaned_data.get('context')
-    account.default_column_width = form.cleaned_data.get('column_width')
-    account.notify_by_email = form.cleaned_data.get('notify_by_email')
-    notify_by_chat = form.cleaned_data.get('notify_by_chat')
-    must_invite = notify_by_chat and not account.notify_by_chat
-    account.notify_by_chat = notify_by_chat
-    account.fresh = False
-    account.put()
-    if must_invite:
-      logging.info('Sending XMPP invite to %s', account.email)
-      try:
-        xmpp.send_invite(account.email)
-      except Exception, err:
-        # XXX How to tell user it failed?
-        logging.error('XMPP invite to %s failed', account.email)
-  else:
-    return respond(request, 'settings.html', {'form': form})
-  return HttpResponseRedirect('/mine')
 
+  nickname = account.nickname
+  default_context = account.default_context
+  default_column_width = account.default_column_width
+
+  form = SettingsForm(initial={'nickname': nickname,
+                               'context': default_context,
+                               'column_width': default_column_width,
+                               'notify_by_email': account.notify_by_email,
+                               'notify_by_chat': account.notify_by_chat,
+                               })
+  password_form = PasswordChangeForm(request.user)
+
+  chat_status = None
+  if account.notify_by_chat:
+    try:
+      presence = xmpp.get_presence(account.email)
+    except Exception, err:
+      logging.error('Exception getting XMPP presence: %s', err)
+      chat_status = 'Error (%s)' % err
+    else:
+      if presence:
+        chat_status = 'online'
+      else:
+        chat_status = 'offline'
+
+  if request.method == 'POST':
+
+    if request.POST.has_key('change_password'):
+      password_form = PasswordChangeForm(request.user, request.POST)
+      if password_form.is_valid():
+        request.user.set_password(password_form.cleaned_data['new_password1'])
+        request.user.save()
+        return HttpResponseRedirect('/mine')
+
+    else:
+
+      form = SettingsForm(request.POST)
+      if form.is_valid():
+        account.nickname = form.cleaned_data.get('nickname')
+        account.default_context = form.cleaned_data.get('context')
+        account.default_column_width = form.cleaned_data.get('column_width')
+        account.notify_by_email = form.cleaned_data.get('notify_by_email')
+        notify_by_chat = form.cleaned_data.get('notify_by_chat')
+        must_invite = notify_by_chat and not account.notify_by_chat
+        account.notify_by_chat = notify_by_chat
+        account.fresh = False
+        account.put()
+        if must_invite:
+          logging.info('Sending XMPP invite to %s', account.email)
+          try:
+            xmpp.send_invite(account.email)
+          except Exception, err:
+            # XXX How to tell user it failed?
+            logging.error('XMPP invite to %s failed', account.email)
+
+        return HttpResponseRedirect('/mine')
+
+  return respond(request, 'settings.html', {'form': form,
+                                            'password_form': password_form,
+                                            'chat_status': chat_status})
 
 @post_required
 @login_required

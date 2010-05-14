@@ -18,6 +18,17 @@ displayed to other users.</p>
 </form>
 
 <p>&nbsp;</p>
+<h2>Change password</h2>
+
+<form action="{%url codereview.views.settings %}" method="post">
+<input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
+<table>
+{{ password_form }}
+<tr><td><input type="submit" value="Change password" name="change_password"></td></tr>
+</table>
+</form>
+
+<p>&nbsp;</p>
 <h2>Delete This Account</h2>
 
 <form action="{%url codereview.views.account_delete%}" method="post">
