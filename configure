@@ -8,36 +8,30 @@ You can run this as:
 
 ./configure
 
-To build a "standard development portal"
-
-./configure --flavour netherlands
-
 To build a standard development portal configured as a netherlands portal
 
-./configure --environment production --flavour netherlands
+./configure --environment production
 
 To build a production installation of the netherlands portal.
 """
 
 import os, sys
+import subprocess
 from optparse import OptionParser
+
+def get_version(path):
+    p = subprocess.Popen([sys.executable, "setup.py", "-V"], stdout=subprocess.PIPE, cwd=path)
+    o, e = p.communicate()
+    return o.strip()
 
 parser = OptionParser()
 parser.add_option("-e", "--environment", dest="environment",
                   help="What kind of deployment", default="dev")
-parser.add_option("-f", "--flavour", dest="flavour",
-                  help="What flavour deployment (e.g. uk)", default="dev")
 parser.add_option("-n", "--noindex", dest="noindex",
 		  help="Do not use our index server", default=False, action="store_true")
 parser.add_option("-c", "--checkout", dest="checkout",
                   help="Do not use a dist.isotoma.com egg, use this checkout", default=False, action="store_true")
-parser.add_option("-u", "--run-updates", dest="updates", 
-                  help="Run migration code", default=False, action="store_true")
 options, args = parser.parse_args()
-
-if options.environment != "dev" and options.flavour == "dev":
-    print >>sys.stderr, "You must select a flavour to build a full stack environment"
-    raise SystemExit
 
 if options.environment != "dev":
     template = "[buildout]\n" \
@@ -46,35 +40,8 @@ if options.environment != "dev":
                "    isotoma/base.cfg\n" \
                "    isotoma/fullstack.cfg\n" \
                "    isotoma/environment/%(environment)s/environment.cfg\n" \
-               "    isotoma/flavour/%(flavour)s/flavour.cfg\n" \
-               "    isotoma/flavour/%(flavour)s/%(environment)s.cfg\n" \
                "cwd = %(cwd)s\n" \
-               "%(checkout)s" \
-	       "\n" \
-	       "[hcpportal]\n" \
-               "flavour = %(flavour)s\n" \
-	       "\n" \
-               "[versions]\n" \
-	       "hcpbundle = %(version)s\n" \
-               "\n" \
-               "%(update)s"
-
-elif options.flavour  != "dev":
-    template = "[buildout]\n"  \
-	       "%(index)s" \
-               "extends =\n" \
-               "    isotoma/base.cfg\n" \
-               "    isotoma/flavour/%(flavour)s/flavour.cfg\n" \
-               "cwd = %(cwd)s\n" \
-               "%(checkout)s" \
-	       "\n" \
-	       "[hcpportal]\n" \
-               "flavour = %(flavour)s\n" \
-	       "\n" \
-               "[versions]\n" \
-	       "hcpbundle = %(version)s\n" \
-               "\n" \
-               "%(update)s"
+               "%(checkout)s"
 
 else:
     template = "[buildout]\n"  \
@@ -82,12 +49,7 @@ else:
                "extends =\n" \
                "    isotoma/base.cfg\n" \
                "cwd = %(cwd)s\n" \
-               "%(checkout)s" \
-	       "\n" \
-               "[versions]\n" \
-	       "hcpbundle = %(version)s\n" \
-               "\n" \
-               "%(update)s"
+               "%(checkout)s"
 
 if options.noindex:
     index = ""
@@ -99,27 +61,14 @@ if not options.checkout:
 else:
     checkout = "develop = ${buildout:cwd}/src\n"
 
-if options.updates or options.environment == "dev":
-    update = ""
-else:
-    update = "[plonesite]\nenabled = False\n\n"
+version = get_version("src")
 
-version = open("src/hcpportal/version.txt").read().strip()
-
-print "Configuring to install hcpbundle version", version
+print "Configuring to install version", version
 
 open("buildout.cfg", "w").write(template % {
-    "flavour": options.flavour, 
     "environment":options.environment,
     "cwd": os.getcwd(),
     "index": index,
     "checkout": checkout,
     "version": version,
-    "update": update,
 })
-
-print "If this is the first time you have built this on this machine:"
-print "sudo ./isotoma/runonce.sh"
-if options.flavour != "dev":
-    print "sudo ./isotoma/flavour/%s/runonce.sh" % options.flavour
-
