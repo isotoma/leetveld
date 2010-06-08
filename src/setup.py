@@ -1,10 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='rietveld',
     version='0.1',
-    packages=['codereview', 'rietveld_helper'],
+    packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
+    #package_data = {'codereview': ['templates/*.html', 'static/*'],
+                    #'rietveld_helper': ['templates/registration/login.html'],
+                   #}
 )
 

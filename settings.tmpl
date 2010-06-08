@@ -15,23 +15,23 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'postgresql_psycopg2'    # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-DATABASE_NAME = 'leetveld'       # Or path to database file if using sqlite3.
-DATABASE_USER = 'leetveld'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'leetveld'         # Not used with sqlite3.
-DATABASE_HOST = 'localhost'             # Set to empty string for . Not used with sqlite3.
-DATABASE_PORT = '5432'             # Set to empty string for default. Not used with sqlite3.
+DATABASE_ENGINE = '$dbengine'    # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+DATABASE_NAME = '$dbname'       # Or path to database file if using sqlite3.
+DATABASE_USER = '$dbuser'             # Not used with sqlite3.
+DATABASE_PASSWORD = '$dbpassword'         # Not used with sqlite3.
+DATABASE_HOST = '$dbhost'             # Set to empty string for . Not used with sqlite3.
+DATABASE_PORT = '$dbport'             # Set to empty string for default. Not used with sqlite3.
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'Europe/London'
+TIME_ZONE = '$timezone'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en-GB'
+LANGUAGE_CODE = '$language'
 
 SITE_ID = 1
 
@@ -41,7 +41,7 @@ USE_I18N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = os.path.join(os.path.dirname(__file__), 'static')
+MEDIA_ROOT = os.path.join(os.path.dirname(__file__), '..', 'static')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
@@ -78,7 +78,7 @@ ROOT_URLCONF = 'rietveld_helper.urls'
 INTERNAL_IPS = ('127.0.0.1',)
 
 TEMPLATE_DIRS = (
-    os.path.join(os.path.dirname(__file__), 'templates'),
+    os.path.join(os.path.dirname(__file__), '..', 'templates'),
 )
 
 INSTALLED_APPS = (
