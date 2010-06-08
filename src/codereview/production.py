@@ -41,7 +41,7 @@ USE_I18N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = os.path.join(os.path.dirname(__file__), '..', 'static')
+MEDIA_ROOT = os.path.join(os.path.dirname(__file__), 'static')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
@@ -60,7 +60,7 @@ SECRET_KEY = 'el@4s$*(idwm5-87teftxlksckmy8$tyo7(tm!n-5x)zeuheex'
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
     'django.template.loaders.app_directories.load_template_source',
-#     'django.template.loaders.eggs.load_template_source',
+    'django.template.loaders.eggs.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -70,7 +70,6 @@ MIDDLEWARE_CLASSES = (
     'gae2django.middleware.FixRequestUserMiddleware',
     'rietveld_helper.middleware.AddUserToRequestMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'djangologging.middleware.LoggingMiddleware',
 )
 
 ROOT_URLCONF = 'rietveld_helper.urls'
@@ -78,7 +77,7 @@ ROOT_URLCONF = 'rietveld_helper.urls'
 INTERNAL_IPS = ('127.0.0.1',)
 
 TEMPLATE_DIRS = (
-    os.path.join(os.path.dirname(__file__), '..', 'templates'),
+    os.path.join(os.path.dirname(__file__), 'templates'),
 )
 
 INSTALLED_APPS = (

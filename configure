@@ -41,7 +41,10 @@ if options.environment != "dev":
                "    isotoma/fullstack.cfg\n" \
                "    isotoma/environment/%(environment)s/environment.cfg\n" \
                "cwd = %(cwd)s\n" \
-               "%(checkout)s"
+               "%(checkout)s\n" \
+               "\n" \
+               "[versions]\n" \
+               "leetveld = %(version)s\n"
 
 else:
     template = "[buildout]\n"  \
@@ -50,6 +53,7 @@ else:
                "    isotoma/base.cfg\n" \
                "cwd = %(cwd)s\n" \
                "%(checkout)s"
+
 
 if options.noindex:
     index = ""
