@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import datetime
 import sys
 
-from psycopg2 import IntegrityError, InternalError
+from psycopg2 import InternalError
 
 from django.core.management import setup_environ
 from codereview import settings
@@ -19,9 +18,7 @@ def main():
 Expected a csv as: 
     'username', 'email', 'encryptedpwd'"""
         sys.exit(0)
-        
-    now = datetime.datetime.now()
-   
+           
     for l in open(sys.argv[1]):
         un, em, cr = l.split(',')
 
