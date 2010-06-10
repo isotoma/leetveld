@@ -9,6 +9,8 @@ git clone git@github.com:isotoma/leetveld.git
 
 cd leetveld
 
+./configure
+
 python bootstrap.py
 
 ./bin/buildout
