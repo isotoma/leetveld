@@ -16,7 +16,8 @@ def main():
 
     if len(sys.argv) != 2:
         print """Missing path to import file
-csv as 'username', 'email', encryptedpwd'"""
+Expected a csv as: 
+    'username', 'email', 'encryptedpwd'"""
         sys.exit(0)
         
     now = datetime.datetime.now()
@@ -31,17 +32,7 @@ csv as 'username', 'email', encryptedpwd'"""
         except User.DoesNotExist:
             pass   
         
-        u = User(
-            username=un,
-            first_name='',
-            last_name='',
-            email=em, 
-            password=cr,
-            is_staff=True,
-            is_active=True,
-            is_superuser=False,
-            last_login=now,
-            date_joined=now)
+        u = User(username=un,email=em,password=cr)
             
         try:     
             u.save()
