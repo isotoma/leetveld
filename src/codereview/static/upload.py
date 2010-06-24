@@ -670,6 +670,14 @@ class VersionControlSystem(object):
       options: Command line options.
     """
     self.options = options
+    self.new_file = None
+    if self.options.revision:
+        self.new_file = re.search(r"new|NEW", self.options.revision)
+    
+  def IsNewFile(self):
+    """Returns true if this file is being submitted as a new review candidate.
+    We will not be able to diff it and its status will probably be unchanged."""
+    return self.new_file != None    
 
   def GenerateDiff(self, args):
     """Return the current diff as a string.
@@ -809,11 +817,9 @@ class SubversionVCS(VersionControlSystem):
 
   def __init__(self, options):
     super(SubversionVCS, self).__init__(options)
-    self.new_file = None
     if self.options.revision:
       match = re.match(r"(\d+)(:(\d+))?", self.options.revision)
       if not match:
-        self.new_file = re.search(r"new|NEW", self.options.revision)
         if not match and self.new_file == None:
           ErrorExit("Invalid Subversion revision %s." % self.options.revision)
       if match:
@@ -833,11 +839,6 @@ class SubversionVCS(VersionControlSystem):
     # Result is cached to not guess it over and over again in GetBaseFile().
     required = self.options.download_base or self.options.revision is not None
     self.svn_base = self._GuessBase(required)
-
-  def IsNewFile(self):
-    """Returns true if this file is being submitted as a new review candidate.
-    We will not be able to diff it and its status will probably be unchanged."""
-    return self.new_file != None
 
   def GuessBase(self, required):
     """Wrapper for _GuessBase."""
@@ -887,13 +888,6 @@ class SubversionVCS(VersionControlSystem):
       ErrorExit("Can't find URL in output from svn info")
     return None
 
-  def unified_diff(self, fromfile, tofile, lines=3):
-      fromdate = time.ctime(os.stat(fromfile).st_mtime)
-      todate = time.ctime(os.stat(tofile).st_mtime)
-      fromlines = open(fromfile, 'U').readlines()
-      tolines = open(tofile, 'U').readlines()
-      return difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate, n=lines)
-
   def GenerateDiff(self, args):
     cmd = ["svn", "diff"]
     if self.options.revision:
@@ -909,7 +903,7 @@ class SubversionVCS(VersionControlSystem):
       #put in a line containing the file's name, as the SVN diff would
       data = "Index: " + name_of_file_for_review +"\n\n";
       #data += RunShell(diff_cmd)
-      diff_result = self.unified_diff(get_empty_file_path(), name_of_file_for_review)
+      diff_result = unified_diff(get_empty_file_path(), name_of_file_for_review)
       for diff_line in diff_result:
         data += diff_line
       #get the name of the file in args to add to the start of the diff output so it meets SVN's reqts
@@ -1128,18 +1122,28 @@ class GitVCS(VersionControlSystem):
 
     # Special used by git to indicate "no such content".
     NULL_HASH = "0"*40
-
-    extra_args = extra_args[:]
-    if self.options.revision:
-      extra_args = [self.options.revision] + extra_args
-
-    # --no-ext-diff is broken in some versions of Git, so try to work around
-    # this by overriding the environment (but there is still a problem if the
-    # git config key "diff.external" is used).
+    cmd = ['git', 'diff']
     env = os.environ.copy()
-    if 'GIT_EXTERNAL_DIFF' in env: del env['GIT_EXTERNAL_DIFF']
-    gitdiff = RunShell(["git", "diff", "--no-ext-diff", "--full-index", "-M"]
-                       + extra_args, env=env)
+        
+    if self.new_file != None:
+      if len(extra_args) != 1:
+        ErrorExit("When using the 'new' switch, please supply exactly one file")
+        
+      name_of_file_for_review = extra_args[0]
+      cmd += ["--no-index", get_empty_file_path(), name_of_file_for_review]
+        
+    else:
+      extra_args = extra_args[:]
+      if self.options.revision:
+        extra_args = [self.options.revision] + extra_args    
+      cmd += ["--no-ext-diff", "--full-index", "-M"] + extra_args
+      if 'GIT_EXTERNAL_DIFF' in env: del env['GIT_EXTERNAL_DIFF']
+    
+    # --no-ext-diff is broken in some versions of Git, so try to work around
+    # this by overriding the environment (but there is still a problem if
+    # the git config key "diff.external" is used).
+    gitdiff = RunShell(cmd, env=env)                       
+                       
     svndiff = []
     filecount = 0
     filename = None
@@ -1421,7 +1425,7 @@ def GuessVCSName():
   # Try running it, but don't die if we don't have git installed.
   try:
     out, returncode = RunShellWithReturnCode(["git", "rev-parse",
-                                              "--is-inside-work-tree"])
+      "--is-inside-work-tree"], print_output=False)
     if returncode == 0:
       return (VCS_GIT, None)
   except OSError, (errno, message):
@@ -1620,11 +1624,19 @@ def RealMain(argv, data=None):
 def get_empty_file_path():
   return os.path.expanduser('~/.codereview_empty_file')
 
+def unified_diff(fromfile, tofile, lines=3):
+  fromdate = time.ctime(os.stat(fromfile).st_mtime)
+  todate = time.ctime(os.stat(tofile).st_mtime)
+  fromlines = open(fromfile, 'U').readlines()
+  tolines = open(tofile, 'U').readlines()
+  return difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, 
+    todate, n=lines)
+
 def main():
   try:
     RealMain(sys.argv)
   except KeyboardInterrupt:
-    print
+
     StatusUpdate("Interrupted.")
     sys.exit(1)
 
