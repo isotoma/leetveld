@@ -1123,7 +1123,6 @@ class GitVCS(VersionControlSystem):
     # Special used by git to indicate "no such content".
     NULL_HASH = "0"*40
     cmd = ['git', 'diff']
-    env = os.environ.copy()
         
     if self.new_file != None:
       if len(extra_args) != 1:
@@ -1131,18 +1130,39 @@ class GitVCS(VersionControlSystem):
         
       name_of_file_for_review = extra_args[0]
       cmd += ["--no-index", get_empty_file_path(), name_of_file_for_review]
+      
+      # Not entirely sure what's going on here, but git diff, with these
+      # specific flags set seems to make Popen return a 1 as the returncode.
+      # So either this is expected behaviour for this configuration, or Popen
+      # thinks that git diff has asploded when in fact it hasn't.
+      # Either way, we bypass the RunShell wrapper and just test for
+      # an error by inspecting stderr
+      try:
+          p = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, shell=False, universal_newlines=True)
+                           
+          err = p.stderr.read()          
+          if err:
+            ErrorExit("Got error from %s:\n%s" % (cmd, err))
+          
+          gitdiff = p.stdout.read()
+                    
+      except Exception, e:
+        ErrorExit("Got error from %s:\n%s" % (cmd, e))
         
     else:
       extra_args = extra_args[:]
       if self.options.revision:
         extra_args = [self.options.revision] + extra_args    
       cmd += ["--no-ext-diff", "--full-index", "-M"] + extra_args
-      if 'GIT_EXTERNAL_DIFF' in env: del env['GIT_EXTERNAL_DIFF']
-    
-    # --no-ext-diff is broken in some versions of Git, so try to work around
-    # this by overriding the environment (but there is still a problem if
-    # the git config key "diff.external" is used).
-    gitdiff = RunShell(cmd, env=env)                       
+      if 'GIT_EXTERNAL_DIFF' in env: 
+        del env['GIT_EXTERNAL_DIFF']
+
+      # --no-ext-diff is broken in some versions of Git, so try to work around
+      # this by overriding the environment (but there is still a problem if
+      # the git config key "diff.external" is used).
+      env = os.environ.copy()
+      gitdiff = RunShell(cmd, env=env)                       
                        
     svndiff = []
     filecount = 0
