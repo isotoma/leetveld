@@ -1155,14 +1155,15 @@ class GitVCS(VersionControlSystem):
       if self.options.revision:
         extra_args = [self.options.revision] + extra_args    
       cmd += ["--no-ext-diff", "--full-index", "-M"] + extra_args
-      if 'GIT_EXTERNAL_DIFF' in env: 
-        del env['GIT_EXTERNAL_DIFF']
 
       # --no-ext-diff is broken in some versions of Git, so try to work around
       # this by overriding the environment (but there is still a problem if
       # the git config key "diff.external" is used).
       env = os.environ.copy()
-      gitdiff = RunShell(cmd, env=env)                       
+      gitdiff = RunShell(cmd, env=env) 
+
+      if 'GIT_EXTERNAL_DIFF' in env: 
+        del env['GIT_EXTERNAL_DIFF']                      
                        
     svndiff = []
     filecount = 0
