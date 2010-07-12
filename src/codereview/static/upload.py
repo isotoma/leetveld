@@ -1160,10 +1160,10 @@ class GitVCS(VersionControlSystem):
       # this by overriding the environment (but there is still a problem if
       # the git config key "diff.external" is used).
       env = os.environ.copy()
-      gitdiff = RunShell(cmd, env=env)   
-         
+      gitdiff = RunShell(cmd, env=env) 
+
       if 'GIT_EXTERNAL_DIFF' in env: 
-        del env['GIT_EXTERNAL_DIFF']                 
+        del env['GIT_EXTERNAL_DIFF']                      
                        
     svndiff = []
     filecount = 0
