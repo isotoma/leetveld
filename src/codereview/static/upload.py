@@ -516,7 +516,9 @@ group.add_option("--download_base", action="store_true",
                  "(side-by-side diffs may not work on files with CRs).")
 group.add_option("--rev", action="store", dest="revision",
                  metavar="REV", default=None,
-                 help="Branch/tree/revision to diff against (used by DVCS).")
+                 help="Branch/tree/revision to diff against (used by DVCS). "
+                       "Upload a diff of revisions by separating the start and end "
+                       "with a colon eg: --rev=1234:1240")
 group.add_option("--send_mail", action="store_true",
                  dest="send_mail", default=True,
                  help="Send notification email to reviewers.")
