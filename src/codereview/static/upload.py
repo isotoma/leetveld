@@ -518,7 +518,7 @@ group.add_option("--rev", action="store", dest="revision",
                  metavar="REV", default=None,
                  help="Branch/tree/revision to diff against (used by DVCS).")
 group.add_option("--send_mail", action="store_true",
-                 dest="send_mail", default=False,
+                 dest="send_mail", default=True,
                  help="Send notification email to reviewers.")
 group.add_option("--vcs", action="store", dest="vcs",
                  metavar="VCS", default=None,
