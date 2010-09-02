@@ -101,3 +101,10 @@ RIETVELD_INCOMING_MAIL_ADDRESS = None
 # Uncomment the following to lines to run unittests with coverage reports.
 #TEST_RUNNER = 'gae2django.tests.test_runner_with_coverage'
 #COVERAGE_HTML_DIR = 'coverage_report'
+
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'benhyl@gmail.com'
+EMAIL_HOST_PASSWORD = 'urgeb3ta5'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
