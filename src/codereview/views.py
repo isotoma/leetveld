@@ -2480,9 +2480,9 @@ def _make_message(request, issue, message, comments=None, send_mail=False,
     reviewer_nicknames = ', '.join(library.nickname(rev_temp, True)
                                    for rev_temp in issue.reviewers)
     cc_nicknames = ', '.join(library.nickname(cc_temp, True)
-                             for cc_temp in cc)
+                             for cc_temp in cc if cc_temp)
     my_nickname = library.nickname(request.user, True)
-    reply_to = ', '.join(reply_to)
+    reply_to = ', '.join([address for address in reply_to if address)
     description = (issue.description or '').replace('\r\n', '\n')
     home = request.build_absolute_uri('/')
     context.update({'reviewer_nicknames': reviewer_nicknames,
@@ -2495,9 +2495,9 @@ def _make_message(request, issue, message, comments=None, send_mail=False,
     logging.warn('Mail: to=%s; cc=%s', ', '.join(to), ', '.join(cc))
     kwds = {}
     if cc:
-      kwds['cc'] = [_encode_safely(address) for address in cc]
+      kwds['cc'] = [_encode_safely(address) for address in cc if address]
     mail.send_mail(sender=my_email,
-                   to=[_encode_safely(address) for address in to],
+                   to=[_encode_safely(address) for address in to if address],
                    subject=_encode_safely(subject),
                    body=_encode_safely(body),
                    reply_to=_encode_safely(reply_to),
