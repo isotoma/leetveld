@@ -46,6 +46,7 @@ import urllib2
 import urlparse
 import difflib
 import time
+import xml.etree.ElementTree
 
 # The md5 module was deprecated in Python 2.5.
 try:
@@ -977,6 +978,31 @@ class SubversionVCS(VersionControlSystem):
       file.close()
     return result
 
+  repo_path = None
+
+  def GetRepoPath(self):
+    """Returns the absolute path of the repo.  E.g. if the checkout URL
+    is http://svnserver/svn/branches/xxyy and the repository root is
+    http://svnserver/svn, then GetRepoPath returns "/branches/xxyy"
+    """
+    if self.repo_path:
+      return self.repo_path
+
+    cmd = ['svn', 'info', '--xml']
+    out, returncode = RunShellWithReturnCode(cmd)
+    if not out or returncode:
+      ErrorExit("Can't find URL in output from svn info")
+
+    tree = xml.etree.ElementTree.fromstring(out)
+    url = tree.findtext('entry/url')
+    repo_root = tree.findtext('entry/repository/root')
+
+    if not url or not repo_root:
+      ErrorExit("Can't find URL in output from svn info")
+
+    self.repo_path = url[len(repo_root):]
+    return self.repo_path
+
   def GetStatus(self, filename):
     """Returns the status of a file."""
     if not self.options.revision or self.new_file != None:
@@ -993,32 +1019,42 @@ class SubversionVCS(VersionControlSystem):
         status = status_lines[2]
       else:
         status = status_lines[0]
-    # If we have a revision to diff against we need to run "svn list"
-    # for the old and the new revision and compare the results to get
-    # the correct status for a file.
+    # If we have a revision to diff against we need to run "svn log" for all
+    # the revisions between the old and new and check the status of the file in
+    # each revision to get the correct status for a file.
     else:
-      dirname, relfilename = os.path.split(filename)
-      if dirname not in self.svnls_cache:
-        cmd = ["svn", "list", "-r", self.rev_start, dirname or "."]
-        out, returncode = RunShellWithReturnCode(cmd)
-        if returncode:
-          ErrorExit("Failed to get status for %s." % filename)
-        old_files = out.splitlines()
-        args = ["svn", "list"]
-        if self.rev_end:
-          args += ["-r", self.rev_end]
-        cmd = args + [dirname or "."]
-        out, returncode = RunShellWithReturnCode(cmd)
-        if returncode:
-          ErrorExit("Failed to run command %s" % cmd)
-        self.svnls_cache[dirname] = (old_files, out.splitlines())
-      old_files, new_files = self.svnls_cache[dirname]
-      if relfilename in old_files and relfilename not in new_files:
-        status = "D   "
-      elif relfilename in old_files and relfilename in new_files:
-        status = "M   "
-      else:
-        status = "A   "
+      repo_root = self.GetRepoPath()
+
+      cmd = ['svn', 'log', '-v', '--xml', '-r%s:%s' % (
+          int(self.rev_start) + 1,
+          self.rev_end if self.rev_end else 'BASE',
+          )]
+      out, returncode = RunShellWithReturnCode(cmd)
+      if returncode:
+        ErrorExit('Failed to get status for %s.' % filename)
+
+      all_status = {}
+      tree = xml.etree.ElementTree.fromstring(out)
+      for logentry in tree.findall('logentry'):
+        for path in logentry.findall('paths/path'):
+          action = path.attrib['action']
+          fname = path.text[len(repo_root) + 1:]
+          status = all_status.get(fname)
+          if not status or action in ['A', 'D']:
+            if status == 'D' and action == 'A':
+              all_status[fname] = 'M'
+            else:
+              all_status[fname] = action
+
+      # the filename is not directly in any of the svn log output if the file
+      # is added or deleted as part of a directory
+      path = filename
+      while path not in all_status:
+        if '/' not in path:
+          break
+        path = os.path.split(path)
+      status = all_status.get(path, 'A')
+      status = '%s   ' % status
     return status
 
   def GetBaseFile(self, filename):
