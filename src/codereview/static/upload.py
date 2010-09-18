@@ -920,12 +920,41 @@ class SubversionVCS(VersionControlSystem):
     else:
       cmd.extend(args)
       data = RunShell(cmd)
-    count = 0
+
+    changes = []
     for line in data.splitlines():
       if line.startswith("Index:") or line.startswith("Property changes on:"):
-        count += 1
+        if line.startswith('Index:'):
+          changes.append(line[len('Index:'):].strip())
+        else:
+          changes.append(line[len('Property changes on:'):].strip())
         logging.info(line)
-    if not count:
+
+    if not args and not self.options.revision:
+      # Add files that don't appear in svn diff because they are svn cp'd
+      extra_diff = []
+      status = RunShell(['svn', 'status', '--xml', '--ignore-externals'])
+      tree = xml.etree.ElementTree.fromstring(status)
+      for entry in tree.findall('target/entry'):
+        path = entry.attrib['path']
+        status = entry.find('wc-status').attrib['item']
+        copied = entry.find('wc-status').attrib.get('copied')
+        if not (status == 'added' and copied == 'true'):
+          continue
+        if not os.path.isfile(path):
+          continue
+        if not path in changes:
+          changes.append(path)
+          # produce svn style diff header
+          extra_diff.append('Index: %s\n%s\n' % (path, '=' * 67))
+          for line in unified_diff(get_empty_file_path(), path):
+            extra_diff.append(line)
+          if not line.endswith('\n'):
+            extra_diff.append('\n\\ No newline at end of file\n')
+      if extra_diff:
+        extra_diff.insert(0, data)
+        data = ''.join(extra_diff)
+    if not changes:
       ErrorExit("No valid patches found in output from svn diff")
     return data
 
