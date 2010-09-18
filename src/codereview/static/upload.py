@@ -68,6 +68,9 @@ verbosity = 1
 # Max size of patch or base file.
 MAX_UPLOAD_SIZE = 900 * 1024
 
+# Max length of the subject / message field.
+MAX_SUBJECT_LENGTH = 100
+
 # Constants for version control names.  Used by GuessVCSName.
 VCS_GIT = "Git"
 VCS_MERCURIAL = "Mercurial"
@@ -1561,6 +1564,15 @@ def RealMain(argv, data=None):
   message = options.message or raw_input(prompt).strip()
   if not message:
     ErrorExit("A non-empty message is required")
+  if not options.message:
+    while len(message) > MAX_SUBJECT_LENGTH or not message:
+      if not message:
+        print "A non-empty message is required"
+      else:
+        print "Ensure this value has at most %s characters (it has %s)" % (
+                MAX_SUBJECT_LENGTH, len(message))
+      message = raw_input(prompt).strip()
+
   rpc_server = GetRpcServer(options)
   form_fields = [("subject", message)]
   if base:
