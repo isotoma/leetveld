@@ -1171,6 +1171,14 @@ class SubversionVCS(VersionControlSystem):
     else:
       StatusUpdate("svn status returned unexpected output: %s" % status)
       sys.exit(1)
+    if status.startswith('A  +'):
+      out, returncode = RunShellWithReturnCode(['svn', 'diff', filename])
+      if not out:
+        # If there is no diff, the file was svn copied without
+        # modifications.  The diff generated for this expects an
+        # empty file as the old file, so we have to set base_content
+        # to empty
+        base_content = ''
     return base_content, new_content, is_binary, status[0:5]
 
 
