@@ -20,6 +20,7 @@
 
 
 # Python imports
+import base64
 import binascii
 import datetime
 import email  # see incoming_mail()
@@ -2220,7 +2221,7 @@ def _get_affected_files(issue):
         modified_count += patch.num_lines
 
     if modified_count < 100:
-      diff = patchset.data
+      diff = base64.decodestring(patchset.data)
 
   return files, diff
 
