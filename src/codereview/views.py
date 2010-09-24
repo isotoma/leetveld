@@ -20,6 +20,7 @@
 
 
 # Python imports
+import base64
 import binascii
 import datetime
 import email  # see incoming_mail()
@@ -1738,7 +1739,8 @@ def download(request):
   if user_agent and 'MSIE' in user_agent:
     # Add 256+ bytes of padding to prevent XSS attacks on Internet Explorer.
     padding = ('='*67 + '\n') * 4
-  return HttpResponse(padding + request.patchset.data,
+  patch = base64.decodestring(request.patchset.data)
+  return HttpResponse(padding + patch,
                       content_type='text/plain')
 
 
