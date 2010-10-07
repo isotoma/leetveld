@@ -11,19 +11,19 @@ cd leetveld
 
 ./configure
 
-python bootstrap.py
+python bootstrap.py --distribute
 
-./bin/buildout
+bin/buildout
 
 Initial setup
 +++++++++++++
 
-./bin/django syncdb
+bin/django syncdb
 
 Run the server
 ++++++++++++++
 
-./bin/django runserver
+bin/django runserver
 
 
 
