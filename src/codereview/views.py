@@ -2482,7 +2482,7 @@ def _make_message(request, issue, message, comments=None, send_mail=False,
     cc_nicknames = ', '.join(library.nickname(cc_temp, True)
                              for cc_temp in cc if cc_temp)
     my_nickname = library.nickname(request.user, True)
-    reply_to = ', '.join([address for address in reply_to if address)
+    reply_to = ', '.join([address for address in reply_to if address])
     description = (issue.description or '').replace('\r\n', '\n')
     home = request.build_absolute_uri('/')
     context.update({'reviewer_nicknames': reviewer_nicknames,
