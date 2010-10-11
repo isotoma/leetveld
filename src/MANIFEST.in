@@ -1,4 +1,4 @@
 recursive-include codereview/templates *.html
+recursive-include codereview/templates *.txt
 recursive-include rietveld_helper/templates *.html
 recursive-include codereview/static *
-
