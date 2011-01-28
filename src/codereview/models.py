@@ -151,6 +151,17 @@ class Issue(db.Model):
             self, account.user)
         self._num_drafts = query.count()
     return self._num_drafts
+  
+  _num_messages = None
+  
+  @property
+  def num_messages(self):
+    """The number of messages for this issue
+    """
+    if self._num_messages is None:
+      query = gql(Message, 'WHERE ANCESTOR IS :1 AND draft = FALSE', self)
+      self._num_messages = query.count()
+    return self._num_messages
 
 
 class PatchSet(db.Model):
