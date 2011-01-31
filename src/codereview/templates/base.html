@@ -153,7 +153,7 @@ var publish_link = "{%url codereview.views.publish issue.key.id%}";
 {%if is_dev%}
 <div style="float:left; color:green; font-weight:bold">DEVELOPMENT SERVER</div>
 {%else%}
-<div style="float:left; font-weight:bold"><i>Rietveld</i> Code Review Tool</div>
+<div style="float:left; font-weight:bold"><i>Leetveld</i> version {{ request.app_version }}</div>
 {%endif%}
 {%if user%}
 <b>{{user.email}} ({{user|nickname:"x"}})</b>

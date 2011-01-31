@@ -4,6 +4,8 @@ import os
 import gae2django
 gae2django.install()
 
+APP_VERSION = open(os.path.join(os.path.dirname(__file__), 'version.txt')).read()
+
 # NOTE: Keep the settings.py in examples directories in sync with this one!
 
 DEBUG = True
@@ -71,6 +73,7 @@ MIDDLEWARE_CLASSES = (
     'rietveld_helper.middleware.AddUserToRequestMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'djangologging.middleware.LoggingMiddleware',
+    'codereview.middleware.AddAppVersionToRequestMiddleware',
 )
 
 ROOT_URLCONF = 'rietveld_helper.urls'

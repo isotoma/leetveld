@@ -14,6 +14,7 @@
 
 """Custom middleware.  Some of this may be generally useful."""
 
+from django.conf import settings
 from google.appengine.api import users
 
 import models
@@ -31,3 +32,9 @@ class AddUserToRequestMiddleware(object):
     if request.user is not None:
       account = models.Account.get_account_for_user(request.user)
     models.Account.current_user_account = account
+
+class AddAppVersionToRequestMiddleware(object):
+  """Put the buildout version into the request object."""
+  def process_request(self, request):
+    setattr(request, 'app_version', settings.APP_VERSION)
+  
