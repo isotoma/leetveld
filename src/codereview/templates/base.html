@@ -158,8 +158,6 @@ var publish_link = "{%url codereview.views.publish issue.key.id%}";
 {%if user%}
 <b>{{user.email}} ({{user|nickname:"x"}})</b>
 |
-{%if must_choose_nickname%}
-<span style="color:red">Please choose your nickname with</span>{%endif%}
 <a class="novisit" href="{%url codereview.views.settings%}">Settings</a>
 |
 {%endif%}

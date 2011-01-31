@@ -1659,7 +1659,7 @@ def delete_patchset(request):
   issue = request.issue
   ps_delete = request.patchset
   ps_id = ps_delete.key().id()
-  patchsets_after = issue.patchset_set.filter('created >', ps_delete.created)
+  patchsets_after = issue.patchset_set.filter(created__gt=ps_delete.created)
   patches = []
   for patchset in patchsets_after:
     for patch in patchset.patch_set:
