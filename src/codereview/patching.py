@@ -74,7 +74,7 @@ def PatchChunks(old_lines, chunks):
       yield "equal", eq, eq
     old_pos = old_i
     # Check that the patch matches the target file
-    if old_lines[old_i:old_j] != old_chunk:
+    if old_lines[old_i:old_j] and old_lines[old_i:old_j] != old_chunk:
       logging.warn("mismatch:%s.%s.", old_lines[old_i:old_j], old_chunk)
       yield ("error: old chunk mismatch", old_lines[old_i:old_j], old_chunk)
       return
