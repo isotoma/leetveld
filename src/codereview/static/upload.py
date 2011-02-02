@@ -1603,7 +1603,7 @@ def RealMain(argv, data=None):
   """
   logging.basicConfig(format=("%(asctime).19s %(levelname)s %(filename)s:"
                               "%(lineno)s %(message)s "))
-  os.environ['LC_ALL'] = 'C'
+#  os.environ['LC_ALL'] = 'C'
   options, args = parser.parse_args(argv[1:])
   files = None
   global verbosity
