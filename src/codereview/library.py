@@ -59,7 +59,7 @@ def nicknames(email_list, arg=None):
 
 
 @register.filter
-def show_user(email, arg=None, autoescape=None, memcache_results=None):
+def show_user(email, arg=None, autoescape=None):
   """Render a link to the user's dashboard, with text being the nickname."""
   if isinstance(email, users.User):
     email = email.email()
@@ -68,10 +68,7 @@ def show_user(email, arg=None, autoescape=None, memcache_results=None):
     if user is not None and email == user.email():
       return 'me'
 
-  if memcache_results is not None:
-    ret = memcache_results.get(email)
-  else:
-    ret = memcache.get('show_user:' + email)
+  ret = memcache.get('show_user:' + email)
 
   if ret is None:
     logging.debug('memcache miss for %r', email)
@@ -88,11 +85,6 @@ def show_user(email, arg=None, autoescape=None, memcache_results=None):
 
     memcache.add('show_user:%s' % email, ret, 300)
 
-    # populate the dict with the results, so same user in the list later
-    # will have a memcache "hit" on "read".
-    if memcache_results is not None:
-      memcache_results[email] = ret
-
   return django.utils.safestring.mark_safe(ret)
 
 
@@ -102,10 +94,8 @@ def show_users(email_list, arg=None):
   if not email_list:
     # Don't wast time calling memcache with an empty list.
     return ''
-  memcache_results = memcache.get_multi(email_list, key_prefix='show_user:')
   return django.utils.safestring.mark_safe(', '.join(
-      show_user(email, arg, memcache_results=memcache_results)
-      for email in email_list))
+      show_user(email, arg) for email in email_list))
 
 
 class UrlAppendViewSettingsNode(django.template.Node):
