@@ -59,7 +59,7 @@ def nicknames(email_list, arg=None):
 
 
 @register.filter
-def show_user(email, arg=None, autoescape=None):
+def show_user(email, arg=None, autoescape=None, memcache_results=None):
   """Render a link to the user's dashboard, with text being the nickname."""
   if isinstance(email, users.User):
     email = email.email()
