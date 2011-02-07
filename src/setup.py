@@ -1,6 +1,9 @@
+import os
 from setuptools import setup, find_packages
 
-__version__ = open('codereview/version.txt').read()
+version_file = os.path.join(os.path.dirname(__file__), "codereview", "version.txt")
+
+__version__ = open(version_file).read()
 
 setup(
     name='leetveld',
