@@ -34,6 +34,9 @@ import models
 import patching
 import intra_region_diff
 
+# Configure logging
+
+log = logging.getLogger(__name__)
 
 class FetchError(Exception):
   """Exception raised by FetchBase() when a URL problem occurs."""
@@ -119,19 +122,19 @@ def FetchBase(base, patch):
     base = db.Link(base)
   except db.BadValueError:
     msg = 'Invalid base URL: %s' % base
-    logging.warn(msg)
+    log.warn(msg)
     raise FetchError(msg)
   url = _MakeUrl(base, filename, rev)
-  logging.info('Fetching %s', url)
+  log.info('Fetching %s', url)
   try:
     result = urlfetch.fetch(url)
   except Exception, err:
     msg = 'Error fetching %s: %s: %s' % (url, err.__class__.__name__, err)
-    logging.warn('FetchBase: %s', msg)
+    log.warn('FetchBase: %s', msg)
     raise FetchError(msg)
   if result.status_code != 200:
     msg = 'Error fetching %s: HTTP status %s' % (url, result.status_code)
-    logging.warn('FetchBase: %s', msg)
+    log.warn('FetchBase: %s', msg)
     raise FetchError(msg)
   return models.Content(text=ToText(UnifyLinebreaks(result.content)),
                         parent=patch)

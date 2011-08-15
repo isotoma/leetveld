@@ -64,6 +64,10 @@ import engine
 import library
 import patching
 
+# Configure logging
+
+log = logging.getLogger(__name__)
+
 # Add our own template library.
 _library_name = __name__.rsplit('.', 1)[0] + '.library'
 if not django.template.libraries.get(_library_name, None):
@@ -434,18 +438,18 @@ def respond(request, template, params=None):
   try:
     return render_to_response(template, params)
   except DeadlineExceededError:
-    logging.exception('DeadlineExceededError')
+    log.exception('DeadlineExceededError')
     return HttpResponse('DeadlineExceededError', status=503)
   except CapabilityDisabledError, err:
-    logging.exception('CapabilityDisabledError: %s', err)
+    log.exception('CapabilityDisabledError: %s', err)
     return HttpResponse('Rietveld: App Engine is undergoing maintenance. '
                         'Please try again in a while. ' + str(err),
                         status=503)
   except MemoryError:
-    logging.exception('MemoryError')
+    log.exception('MemoryError')
     return HttpResponse('MemoryError', status=503)
   except AssertionError:
-    logging.exception('AssertionError')
+    log.exception('AssertionError')
     return HttpResponse('AssertionError')
 
 
@@ -510,14 +514,14 @@ def _notify_issue(request, issue, message):
   accounts = models.Account.get_multiple_accounts_by_email(emails)
   jids = []
   for account in accounts.itervalues():
-    logging.debug('email=%r,chat=%r', account.email, account.notify_by_chat)
+    log.debug('email=%r,chat=%r', account.email, account.notify_by_chat)
     if account.notify_by_chat:
       jids.append(account.email)
   if not jids:
-    logging.debug('No XMPP jids to send to for issue %d', iid)
+    log.debug('No XMPP jids to send to for issue %d', iid)
     return True  # Nothing to do.
   jids_str = ', '.join(jids)
-  logging.debug('Sending XMPP for issue %d to %s', iid, jids_str)
+  log.debug('Sending XMPP for issue %d to %s', iid, jids_str)
   sender = '?'
   if models.Account.current_user_account:
     sender = models.Account.current_user_account.nickname
@@ -530,15 +534,15 @@ def _notify_issue(request, issue, message):
   try:
     sts = xmpp.send_message(jids, message)
   except Exception, err:
-    logging.exception('XMPP exception %s sending for issue %d to %s',
+    log.exception('XMPP exception %s sending for issue %d to %s',
                       err, iid, jids_str)
     return False
   else:
     if sts == [xmpp.NO_ERROR] * len(jids):
-      logging.info('XMPP message sent for issue %d to %s', iid, jids_str)
+      log.info('XMPP message sent for issue %d to %s', iid, jids_str)
       return True
     else:
-      logging.error('XMPP error %r sending for issue %d to %s',
+      log.error('XMPP error %r sending for issue %d to %s',
                     sts, iid, jids_str)
       return False
 
@@ -654,7 +658,7 @@ def user_key_required(func):
     else:
       account = models.Account.get_account_for_nickname(user_key)
       if not account:
-        logging.info("account not found for nickname %s" % user_key)
+        log.info("account not found for nickname %s" % user_key)
         return HttpResponseNotFound('No user found with that key (%s)' %
                                     user_key)
       request.user_to_show = account.user
@@ -1444,7 +1448,7 @@ def _get_patchset_info(request, patchset_id):
           for delta in patch.delta:
             patch.parsed_deltas.append([patchset_id_mapping[delta], delta])
       except DeadlineExceededError:
-        logging.exception('DeadlineExceededError in _get_patchset_info')
+        log.exception('DeadlineExceededError in _get_patchset_info')
         if attempt > 2:
           response = HttpResponse('DeadlineExceededError - create a new issue.')
         else:
@@ -1626,10 +1630,10 @@ def _delete_cached_contents(patch_set):
     patch.patched_content = None
     patches.append(patch)
   if contents:
-    logging.info("Deleting %d contents", len(contents))
+    log.info("Deleting %d contents", len(contents))
     db.delete(contents)
   if patches:
-    logging.info("Updating %d patches", len(patches))
+    log.info("Updating %d patches", len(patches))
     db.put(patches)
 
 
@@ -2108,7 +2112,7 @@ def inline_draft(request):
   try:
     return _inline_draft(request)
   except Exception, err:
-    logging.exception('Exception in inline_draft processing:')
+    log.exception('Exception in inline_draft processing:')
     # TODO(guido): return some kind of error instead?
     # Return HttpResponse for now because the JS part expects
     # a 200 status code.
@@ -2321,7 +2325,7 @@ def publish(request):
   tbd.append(issue)
 
   if comments:
-    logging.warn('Publishing %d comments', len(comments))
+    log.warn('Publishing %d comments', len(comments))
   msg = _make_message(request, issue,
                       form.cleaned_data['message'],
                       comments,
@@ -2495,7 +2499,7 @@ def _make_message(request, issue, message, comments=None, send_mail=False,
                     'description': description, 'home': home,
                     })
     body = django.template.loader.render_to_string(template, context)
-    logging.warn('Mail: to=%s; cc=%s', ', '.join(to), ', '.join(cc))
+    log.warn('Mail: to=%s; cc=%s', ', '.join(to), ', '.join(cc))
     kwds = {}
     if cc:
       kwds['cc'] = [_encode_safely(address) for address in cc if address]
@@ -2791,7 +2795,7 @@ def settings(request):
     try:
       presence = xmpp.get_presence(account.email)
     except Exception, err:
-      logging.error('Exception getting XMPP presence: %s', err)
+      log.error('Exception getting XMPP presence: %s', err)
       chat_status = 'Error (%s)' % err
     else:
       if presence:
@@ -2822,12 +2826,12 @@ def settings(request):
         account.fresh = False
         account.put()
         if must_invite:
-          logging.info('Sending XMPP invite to %s', account.email)
+          log.info('Sending XMPP invite to %s', account.email)
           try:
             xmpp.send_invite(account.email)
           except Exception, err:
             # XXX How to tell user it failed?
-            logging.error('XMPP invite to %s failed', account.email)
+            log.error('XMPP invite to %s failed', account.email)
 
         return HttpResponseRedirect('/mine')
 
@@ -2850,7 +2854,7 @@ def user_popup(request):
   try:
     return _user_popup(request)
   except Exception, err:
-    logging.exception('Exception in user_popup processing:')
+    log.exception('Exception in user_popup processing:')
     # Return HttpResponse because the JS part expects a 200 status code.
     return HttpResponse('<font color="red">Error: %s; please report!</font>' %
                         err.__class__.__name__)
@@ -2890,11 +2894,11 @@ def incoming_chat(request):
   """
   sender = request.POST.get('from')
   if not sender:
-    logging.warn('Incoming chat without "from" key ignored')
+    log.warn('Incoming chat without "from" key ignored')
   else:
     sts = xmpp.send_message([sender],
                             'Sorry, Rietveld does not support chat input')
-    logging.debug('XMPP status %r', sts)
+    log.debug('XMPP status %r', sts)
   return HttpResponse('')
 
 
@@ -2909,7 +2913,7 @@ def incoming_mail(request, recipients):
   try:
     _process_incoming_mail(request.raw_post_data, recipients)
   except InvalidIncomingEmailError, err:
-    logging.debug(str(err))
+    log.debug(str(err))
   return HttpResponse('')
 
 

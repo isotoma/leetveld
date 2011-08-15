@@ -25,6 +25,10 @@ import django.utils.safestring
 
 import models
 
+# Configure logging
+
+log = logging.getLogger(__name__)
+
 register = django.template.Library()
 
 
@@ -71,7 +75,7 @@ def show_user(email, arg=None, autoescape=None, memcache_results=None):
   ret = memcache.get('show_user:' + email)
 
   if ret is None:
-    logging.debug('memcache miss for %r', email)
+    log.debug('memcache miss for %r', email)
     account = models.Account.get_account_for_email(email)
     if account is not None and account.user_has_selected_nickname:
       ret = ('<a href="/user/%(key)s" onMouseOver="M_showUserInfoPopup(this)">'

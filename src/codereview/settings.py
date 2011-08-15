@@ -1,6 +1,8 @@
 # Django settings for django_gae2django project.
 
 import os
+
+import codereview
 import gae2django
 gae2django.install()
 
@@ -17,12 +19,16 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'sqlite3'    # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-DATABASE_NAME = os.path.join(os.path.dirname(__file__), 'codereview.db')       # Or path to database file if using sqlite3.
-DATABASE_USER = ''             # Not used with sqlite3.
-DATABASE_PASSWORD = ''         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for . Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(os.path.dirname(__file__), 'codereview.db'),
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
+    }
+}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -74,7 +80,6 @@ MIDDLEWARE_CLASSES = (
     'gae2django.middleware.FixRequestUserMiddleware',
     'rietveld_helper.middleware.AddUserToRequestMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'djangologging.middleware.LoggingMiddleware',
     'codereview.middleware.AddAppVersionToRequestMiddleware',
 )
 
@@ -107,3 +112,46 @@ RIETVELD_INCOMING_MAIL_ADDRESS = None
 #TEST_RUNNER = 'gae2django.tests.test_runner_with_coverage'
 #COVERAGE_HTML_DIR = 'coverage_report'
 
+LOG_FILE = os.path.join(os.path.abspath(os.path.dirname(codereview.__file__)), 'logs/leetveld.log')
+
+LOGGING = {
+    'version': 1,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(message)s',
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s',
+        },
+    },
+    'handlers': {
+        'log_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': LOG_FILE,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+        'django.request': {
+            'handlers': ['log_file', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'codereview': {
+            'handlers': ['log_file'],
+            'level': 'INFO',
+            'propagate': True,
+        }
+    }
+}
