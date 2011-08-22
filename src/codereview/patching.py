@@ -23,6 +23,8 @@ import logging
 import re
 import sys
 
+# Configure logging
+log = logging.getLogger(__name__)
 
 _CHUNK_RE = re.compile(r"""
   @@
@@ -75,7 +77,7 @@ def PatchChunks(old_lines, chunks):
     old_pos = old_i
     # Check that the patch matches the target file
     if old_lines[old_i:old_j] and old_lines[old_i:old_j] != old_chunk:
-      logging.warn("mismatch:%s.%s.", old_lines[old_i:old_j], old_chunk)
+      log.warn("mismatch:%s.%s.", old_lines[old_i:old_j], old_chunk)
       yield ("error: old chunk mismatch", old_lines[old_i:old_j], old_chunk)
       return
     # TODO(guido): ParsePatch knows the diff details, but throws the info away
@@ -144,7 +146,7 @@ def ParsePatchToChunks(lines, name="<patch>"):
         old_i, old_j = old_range
         new_i, new_j = new_range
         if len(old_chunk) != old_j - old_i or len(new_chunk) != new_j - new_i:
-          logging.warn("%s:%s: previous chunk has incorrect length",
+          log.warn("%s:%s: previous chunk has incorrect length",
                        name, lineno)
           return None
         chunks.append((old_range, new_range, old_chunk, new_chunk))
@@ -169,13 +171,13 @@ def ParsePatchToChunks(lines, name="<patch>"):
       new_range = new_i, new_j
       # Check header consistency with previous header
       if old_i < old_last or new_i < new_last:
-        logging.warn("%s:%s: chunk header out of order: %r",
+        log.warn("%s:%s: chunk header out of order: %r",
                      name, lineno, line)
         return None
       if old_last == 0:
-        logging.info("Entire file submitted for review")
+        log.info("Entire file submitted for review")
       elif old_i - old_last != new_i - new_last:
-        logging.warn("%s:%s: inconsistent chunk header: %r",
+        log.warn("%s:%s: inconsistent chunk header: %r",
                      name, lineno, line)
         return None
       old_last = old_j
@@ -193,7 +195,7 @@ def ParsePatchToChunks(lines, name="<patch>"):
       else:
         # Only log if it's a non-blank line.  Blank lines we see a lot.
         if line and line.strip():
-          logging.warn("%s:%d: indecypherable input: %r", name, lineno, line)
+          log.warn("%s:%d: indecypherable input: %r", name, lineno, line)
         if chunks or raw_chunk:
           break  # Trailing garbage isn't so bad
         return None
@@ -239,7 +241,7 @@ def ParsePatchToLines(lines):
       result.append((0, 0, line))
       match = _CHUNK_RE.match(line)
       if not match:
-        logging.warn("ParsePatchToLines match failed on %s", line)
+        log.warn("ParsePatchToLines match failed on %s", line)
         return None
       old_ln = int(match.groups()[0])
       new_ln = int(match.groups()[2])

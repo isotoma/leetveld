@@ -16,7 +16,7 @@
 
 # Python imports
 import logging
-import md5
+import hashlib
 import os
 import re
 import time
@@ -32,6 +32,8 @@ import patching
 
 CONTEXT_CHOICES = (3, 10, 25, 50, 75, 100)
 
+# Configure logging
+log = logging.getLogger(__name__)
 
 ### GQL query cache ###
 
@@ -362,11 +364,11 @@ class Patch(db.Model):
       if self.content is not None:
         if self.content.is_bad:
           msg = 'Bad content. Try to upload again.'
-          logging.warn('Patch.get_content: %s', msg)
+          log.warn('Patch.get_content: %s', msg)
           raise engine.FetchError(msg)
         if self.content.is_uploaded and self.text == None:
           msg = 'Upload in progress.'
-          logging.warn('Patch.get_content: %s', msg)
+          log.warn('Patch.get_content: %s', msg)
           raise engine.FetchError(msg)
         else:
           return self.content
@@ -399,7 +401,7 @@ class Patch(db.Model):
       self.patched_content = None
 
     old_lines = self.get_content().text.splitlines(True)
-    logging.info('Creating patched_content for %s', self.filename)
+    log.info('Creating patched_content for %s', self.filename)
     chunks = patching.ParsePatchToChunks(self.lines, self.filename)
     new_lines = []
     for tag, old, new in patching.PatchChunks(old_lines, chunks):
@@ -702,7 +704,7 @@ class Account(db.Model):
     drafts = memcache.get('user_drafts:' + self.email)
     if drafts is not None:
       self._drafts = drafts
-      ##logging.info('HIT: %s -> %s', self.email, self._drafts)
+      ##log.info('HIT: %s -> %s', self.email, self._drafts)
       return False
     # We're looking for the Issue key id.  The ancestry of comments goes:
     # Issue -> PatchSet -> Patch -> Comment.
@@ -711,12 +713,12 @@ class Account(db.Model):
                                        'WHERE author = :1 AND draft = TRUE',
                                        self.user))
     self._drafts = list(issue_ids)
-    ##logging.info('INITIALIZED: %s -> %s', self.email, self._drafts)
+    ##log.info('INITIALIZED: %s -> %s', self.email, self._drafts)
     return True
 
   def _save_drafts(self):
     """Save self._drafts to memcache."""
-    ##logging.info('SAVING: %s -> %s', self.email, self._drafts)
+    ##log.info('SAVING: %s -> %s', self.email, self._drafts)
     memcache.set('user_drafts:' + self.email, self._drafts, 3600)
 
   def get_xsrf_token(self, offset=0):
@@ -724,7 +726,7 @@ class Account(db.Model):
     if not self.xsrf_secret:
       self.xsrf_secret = os.urandom(8)
       self.put()
-    m = md5.new(self.xsrf_secret)
+    m = hashlib.md5(self.xsrf_secret)
     email_str = self.lower_email
     if isinstance(email_str, unicode):
       email_str = email_str.encode('utf-8')
