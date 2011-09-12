@@ -20,7 +20,7 @@ def find_packages(base_dir):
 
 setup(
     name='django-gae2django',
-    version='0.1',
+    version='0.1-isotoma2',
     description='Django-based implementation of App Engine APIs',
     author='Andi Albrecht',
     author_email='albrecht.andi@gmail.com',
