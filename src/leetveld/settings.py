@@ -2,7 +2,7 @@
 
 import os
 
-import codereview
+import leetveld
 import gae2django
 gae2django.install()
 
@@ -80,7 +80,7 @@ MIDDLEWARE_CLASSES = (
     'gae2django.middleware.FixRequestUserMiddleware',
     'rietveld_helper.middleware.AddUserToRequestMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'codereview.middleware.AddAppVersionToRequestMiddleware',
+    'leetveld.middleware.AddAppVersionToRequestMiddleware',
 )
 
 ROOT_URLCONF = 'rietveld_helper.urls'
@@ -99,10 +99,10 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'gae2django',
     'rietveld_helper',
-    'codereview',
+    'leetveld',
 )
 
-AUTH_PROFILE_MODULE = 'codereview.Account'
+AUTH_PROFILE_MODULE = 'leetveld.Account'
 LOGIN_REDIRECT_URL = '/'
 
 # This won't work with gae2django.
@@ -112,7 +112,7 @@ RIETVELD_INCOMING_MAIL_ADDRESS = None
 #TEST_RUNNER = 'gae2django.tests.test_runner_with_coverage'
 #COVERAGE_HTML_DIR = 'coverage_report'
 
-LOG_FILE = os.path.join(os.path.abspath(os.path.dirname(codereview.__file__)), 'logs/leetveld.log')
+LOG_FILE = os.path.join(os.path.abspath(os.path.dirname(leetveld.__file__)), 'logs/leetveld.log')
 
 LOGGING = {
     'version': 1,
@@ -148,7 +148,7 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': False,
         },
-        'codereview': {
+        'leetveld': {
             'handlers': ['log_file'],
             'level': 'INFO',
             'propagate': True,

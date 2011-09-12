@@ -14,7 +14,7 @@ draftMessage = new M_draftMessage({{issue.key.id}}, true);
 <h2>Publish + Mail Draft Comments</h2>
 
 <div>
-  <form action="{%url codereview.views.publish issue.key.id%}"
+  <form action="{%url leetveld.views.publish issue.key.id%}"
         method="post" id="publish-form">
   <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
   <table>
