@@ -39,7 +39,7 @@ class Client(object):
         mapping = {}
         [mapping.setdefault(key, self.get('%s%s' % (key_prefix, key)))
          for key in keys
-         if key in cache]
+         if '%s%s' % (key_prefix, key) in cache]
         return mapping
 
     def delete(self, key, seconds=0):

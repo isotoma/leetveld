@@ -1,0 +1,34 @@
+Index: templates/issue_base.html
+===================================================================
+--- templates/issue_base.html	(revision 647)
++++ templates/issue_base.html	(working copy)
+@@ -28,8 +28,7 @@
+     <a class="novisit" href="{%url codereview.views.index%}?closed=1">All Issues</a>
+     |
+     <a class="novisit" href="{{sign_in}}">Sign in</a>
+-    with your <a href="https://www.google.com/accounts/NewAccount">Google
+-    Account</a> to create issues and add comments
++    to create issues and add comments
+   {%endif%}
+ {%endblock%}
+ 
+Index: templates/base.html
+===================================================================
+--- templates/base.html	(revision 647)
++++ templates/base.html	(working copy)
+@@ -168,10 +168,14 @@
+ <a class="novisit" href="{%url codereview.views.settings%}">Settings</a>
+ |
+ {%endif%}
+-{%if is_dev%}
++{%if is_dev or user.is_superuser%}
+ <a class="novisit" target="_blank" href="/_ah/admin">Admin</a>
+ |
+ {%endif%}
++{%if user%}
++<a class="novisit" target="_blank" href="/admin/password_change">Change password</a>
++|
++{%endif%}
+ <a class="novisit" target="_blank"
+    href="http://code.google.com/p/rietveld/wiki/CodeReviewHelp">Help</a>
+ |

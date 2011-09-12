@@ -16,6 +16,7 @@ from django.db.models import manager
 from django.db.models.fields.related import (
     ReverseSingleRelatedObjectDescriptor as RSROD)
 from django.db.models.query import QuerySet
+from django.db.models.query_utils import Q
 from django.db.models.signals import post_init
 from django.db import transaction
 from django.utils.hashcompat import md5_constructor
@@ -43,11 +44,25 @@ class Query(QuerySet):
             return super(Query, self).filter(*args, **kwds)
         property_operator, value = args
         if isinstance(value, basestring):
-            where = u'%s \'%s\'' % (property_operator,
-                                    value.replace("'", "''"))
+            value = u'%s' % value
+            value = value.replace("'", "''")
+        elif isinstance(value, Key):
+            value = value.obj
+        prop, op = property_operator.split(' ', 1)
+        # TODO(andi): See GqlQuery. Refactor query building.
+        if op.lower() in ('=', 'is'):
+            self.query.add_q(Q(**{prop: value}))
+        elif op == '>':
+            self.query.add_q(Q(**{'%s__gt' % prop: value}))
+        elif op == '<':
+            self.query.add_q(Q(**{'%s__lt' % prop: value}))
+        elif op == '>=':
+            self.query.add_q(Q(**{'%s__gte' % prop: value}))
+        elif op == '<=':
+            self.query.add_q(Q(**{'%s__lte' % prop: value}))
         else:
             where = '%s %r' % (property_operator, value)
-        self.query.add_extra(None, None, [where], None, None, None)
+            self.query.add_extra(None, None, [where], None, None, None)
         return self
 
     def _filter(self, *args, **kwds):
@@ -65,7 +80,9 @@ class Query(QuerySet):
         return None
 
     def ancestor(self, ancestor):
-        raise NotImplementedError
+        pattern = '@@'.join(str(x.key()) for x in ancestor.get_ancestry())
+        # TODO(andi): __startswith would be better, see issue21
+        self.query.add_q(Q(gae_ancestry__endswith='@%s@' % pattern))
 
     def fetch(self, limit, offset=0):
         return list(self)[offset:limit]
@@ -166,12 +183,15 @@ def patch_user_model(sender, **kwds):
         instance.email = CallableString(instance.email)
     if not hasattr(instance, 'nickname'):
         nickname = CallableString()
-        try:
-            profile = instance.get_profile()
-            if hasattr(profile, 'nickname'):
-                nickname = CallableString(profile.nickname)
-        except:
-            pass
+        # TODO(andi): Commented since it's a performance killer.
+        #  All tests pass and at least Rietveld seems to run fine.
+        #  I'll leave it in the sources in case it comes up again...
+#        try:
+#            profile = instance.get_profile()
+#            if hasattr(profile, 'nickname'):
+#                nickname = CallableString(profile.nickname)
+#        except:
+#            pass
         instance.nickname = nickname
 
 post_init.connect(patch_user_model)
@@ -192,7 +212,7 @@ class ListProperty(models.TextField):
         kwds = _adjust_keywords(kwds)
         super(models.TextField, self).__init__()
 
-    def get_db_prep_value(self, value):
+    def get_db_prep_value(self, value, connection=None, prepared=False):
         return base64.encodestring(cPickle.dumps(value))
 
     def to_python(self, value):
@@ -208,10 +228,11 @@ class ListProperty(models.TextField):
 
 
 Email = str
-Blob = str
 Link = str
 Text = unicode
 
+class Blob(str):
+    pass
 
 class G2DReverseSingleRelatedObjectDescriptor(RSROD):
 
@@ -222,7 +243,7 @@ class G2DReverseSingleRelatedObjectDescriptor(RSROD):
         return self._attr_name()
 
     def _attr_name(self):
-        return self.field.name
+        return "_%s" % self.field.name
 
 
 class ReferenceProperty(models.ForeignKey):
@@ -252,11 +273,13 @@ SelfReferenceProperty = ReferenceProperty
 
 class BlobProperty(models.TextField):
 
+    __metaclass__ = models.SubfieldBase
+
     def __init__(self, *args, **kwds):
         kwds = _adjust_keywords(kwds)
         super(BlobProperty, self).__init__(*args, **kwds)
 
-    def get_db_prep_value(self, value):
+    def get_db_prep_value(self, value, connection=None, prepared=False):
         if value is None:
             return value
         return base64.encodestring(value)
@@ -264,12 +287,17 @@ class BlobProperty(models.TextField):
     def to_python(self, value):
         if value is None:
             return value
-        try:
-            return base64.decodestring(value)
-        except binascii.Error:
-            # value is already decoded, or for legacy data it was never encoded
+        if isinstance(value, Blob):
             return value
-        return value
+        elif isinstance(value, unicode):
+            # For legacy data
+            value = value.encode('utf-8')
+        try:
+            return Blob(base64.decodestring(value))
+        except binascii.Error:
+            # value is already decoded, or for legacy data it was
+            # never encoded
+            return Blob(value)
 
 
 class LinkProperty(models.URLField):
@@ -422,10 +450,15 @@ class Model(models.Model):
         return props
 
     def key(self):
+        if self.id is None:
+            raise NotSavedError()
         if self._key is None:
             self._key = Key('%s_%s' % (self.__class__.__name__, self.id))
             self._key._obj = self
         return self._key
+
+    def is_saved(self):
+        return self.id is not None
 
     def put(self):
         return self.save()
@@ -487,7 +520,7 @@ class _QueryIterator(object):
 
     def next(self):
         self._idx += 1
-        if self._results.count() > self._idx:
+        if len(self._results) > self._idx:
             return self._results[self._idx]
         else:
             raise StopIteration
@@ -545,6 +578,7 @@ class GqlQuery(object):
         if not cls:
             raise Error('Class not found.')
         q = cls.objects.all()
+        q = q.select_related()
         #print '-'*10
         #print "xx", sql, self._args, self._kwds
         ancestor = None
@@ -584,6 +618,8 @@ class GqlQuery(object):
                     if isinstance(cls._meta.get_field(kwd), ListProperty):
                         listprop_filter.append((kwd, item))
                         continue
+                    if isinstance(kwd, unicode):
+                        kwd = kwd.encode('ascii')
                     q = q._filter(**{kwd: item})
             elif op == 'is' and kwd == -1: # ANCESTOR
                 if ancestor:
@@ -636,7 +672,7 @@ class GqlQuery(object):
         if self._results is None:
             self._execute()
         idx = self._idx
-        c = len(list(self._results))
+        c = len(self._results)
         self._idx = idx
         return c
 

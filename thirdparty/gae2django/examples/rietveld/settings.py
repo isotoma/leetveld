@@ -2,6 +2,8 @@
 
 # NOTE: Keep the settings.py in examples directories in sync with this one!
 
+import os
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -17,19 +19,6 @@ DATABASE_USER = ''             # Not used with sqlite3.
 DATABASE_PASSWORD = ''         # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
-
-# DATABASES setting for Django >= 1.3
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'dev.db',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
-    }
-}
-
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -55,7 +44,7 @@ MEDIA_ROOT = ''
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/static/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -72,20 +61,27 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.load_template_source',
 )
 
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'gae2django.middleware.FixRequestUserMiddleware',
+    # Keep in mind, that CSRF protection is DISABLED in this example!
+    'rietveld_helper.middleware.DisableCSRFMiddleware',
+    'rietveld_helper.middleware.AddUserToRequestMiddleware',
     'django.middleware.doc.XViewMiddleware',
 )
 
-ROOT_URLCONF = 'urls'
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.auth',    # required by admin panel
+    'django.core.context_processors.request',
+)
+
+ROOT_URLCONF = 'rietveld_helper.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(os.path.dirname(__file__), 'templates'),
 )
 
 INSTALLED_APPS = (
@@ -93,9 +89,16 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.admin',
     'gae2django',
+    'rietveld_helper',
+    'codereview',
 )
 
-# Uncomment the following to lines to run unittests with coverage reports.
-#TEST_RUNNER = 'gae2django.tests.test_runner_with_coverage'
-#COVERAGE_HTML_DIR = 'coverage_report'
+AUTH_PROFILE_MODULE = 'codereview.Account'
+LOGIN_REDIRECT_URL = '/'
+
+# This won't work with gae2django.
+RIETVELD_INCOMING_MAIL_ADDRESS = None
+
+UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')

@@ -1,0 +1,108 @@
+This examples shows how to run Rietveld - the code review tool available
+at http://codereview.appspot.com/.
+
+Before you are able to run this example you need to obtain a recent version
+of Rietveld. There are two ways to do this. Either set it up manually or
+use the Makefile in this directory.
+
+
+Using the Makefile
+==================
+
+Skip down to "Manual Setup" if you don't want to use the Makefile.
+
+Just run
+
+     make all
+
+This will fetch a recent Django and Rietveld's sources directly from their
+Subversion repositories. When it's finished run
+
+    ./manage.py runserver 127.0.0.1:8000
+
+and point your browser to that location.
+
+
+Upgrading Rietveld on Django
+============================
+
+To upgrade your Rietveld on Django installation just do the following:
+
+ * Have a look at the current Makefile. Remember the Rietveld revision
+   (at the top of the Makefile) you're currently running.
+ * Update the gae2django sources from the Subversion repository (svn
+   up).
+ * Have a look at examples/rietveld/UPDATES if you need to do manual
+   database changes. You only have to do manual database changes if
+   there are entries in that file for Rietveld revisions greater than
+   the one you've remembered in the first step.
+
+
+Manual Setup
+============
+
+For the start you need to get this example in current directory
+
+    svn co http://django-gae2django.googlecode.com/svn/trunk/examples/rietveld .
+
+Checkout the django and gae2django from Subversion if they are not on
+your PYTHONPATH
+
+Note: Rietveld requires Django 1.2.5!
+
+    svn co http://code.djangoproject.com/svn/django/tags/releases/1.2.5/django django
+    svn co http://django-gae2django.googlecode.com/svn/trunk/gae2django
+
+Then check out Rietveld by running
+
+    svn co http://rietveld.googlecode.com/svn/trunk/codereview
+    svn co http://rietveld.googlecode.com/svn/trunk/static
+    svn co http://rietveld.googlecode.com/svn/trunk/templates
+    svn export http://rietveld.googlecode.com/svn/trunk/upload.py
+
+
+Then modify your checked out version of Rietveld by applying all patches
+in the patches directory.
+
+    patch -p0 < patches/upload.diff
+    patch -p0 < patches/account-login-links.diff
+    patch -p0 < patches/download.link.diff
+
+Finally run
+
+    ./manage.py syncdb
+
+to initialize the example database.
+
+    ./manage.py runserver 127.0.0.1:8000
+
+will run Rietveld in development mode.
+
+
+Production Deployment
+=====================
+
+The preferred method to deploy Django applications is to use WSGI supporting
+web server. You may copy codereview.wsgi.example and edit it to change
+/var/rietveld path to point to your installation.
+
+There is one important thing to remember. Django serves media (static) files
+only in development mode. For running Rietveld in a production environment,
+you need to setup your web-server to serve the /static/ alias directly.
+
+http://docs.djangoproject.com/en/dev/howto/deployment/modpython/#serving-media-files
+
+There is the example configuration for running Rietveld with Apache2+mod_wsgi
+Feel free to copy it from apache.conf.example. You may need to change
+'codereview' user name in WSGI directives and adjust paths to match your
+installation.
+
+When running in a production environment, keep in Django's CSRF
+protection is disabled in this example!
+
+
+Adding Users
+============
+
+Go to /admin URL and login as a super user. Users may change password by
+going to /admin/password_change URL.

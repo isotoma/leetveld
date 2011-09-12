@@ -96,6 +96,18 @@ class DatastoreModelTest(unittest.TestCase):
         self.assert_(item1 in TestModel.all())
         item1.delete()
 
+    def test_ancestor(self):
+        grandpa = TestModel.get_or_insert('grandpa')
+        dad = TestModel.get_or_insert('dad', parent=grandpa)
+        TestModel.get_or_insert('junior', parent=dad)
+        TestModel.get_or_insert('unrelated')
+        q = TestModel.all()
+        q.ancestor(grandpa)
+        self.assertEqual(len(q), 2)
+        q2 = TestModel.all()
+        q2.ancestor(dad)
+        self.assertEqual(len(q2), 1)
+
     def test_gql(self):
         item1 = TestModel.get_or_insert('test1', xstring='foo')
         item2 = TestModel.get_or_insert('test2', xstring='foo')
@@ -129,6 +141,20 @@ class DatastoreModelTest(unittest.TestCase):
         self.assertEqual(id(key1), id(key2),
                          ('Multiple calls to Model.key() returned different'
                           ' objects: %s %s.' % (id(key1), id(key2))))
+
+    def test_key_item_saved(self):
+        # make sure that an instance of this model is saved at least
+        # once before retrieving the key
+        item = TestModel()
+        self.assertRaises(db.NotSavedError, item.key)
+        item.put()
+        item.key()
+
+    def test_is_saved(self):
+        item = TestModel()
+        self.assertFalse(item.is_saved())
+        item.put()
+        self.assertTrue(item.is_saved())
 
 
 class TestListProperty(unittest.TestCase):
@@ -191,3 +217,26 @@ class TestReferenceProperty(unittest.TestCase):
         self.assert_(hasattr(m, '_ref'))
         self.assert_(isinstance(m._ref, db.Key))
         self.assertEqual(m._ref, m2.key())
+
+    def test_get_value_for_datastore(self):
+        m = TestModel()
+        m2 = TestModel2()
+        m2.put()
+        m.ref = m2
+        m.put()
+        self.assert_(isinstance(TestModel.ref.get_value_for_datastore(m),
+                                db.Key))
+        self.assertEqual(TestModel.ref.get_value_for_datastore(m), m2.key())
+
+
+class TestBlobProperty(unittest.TestCase):
+
+    def test_blobproperty_save_restore(self):
+        obj = TestModel()
+        obj.blob = db.Blob("test")
+        obj.save()
+        tobj = TestModel.get_by_id(obj.key().id())
+        self.assertEqual(tobj, obj)
+        self.assertEqual(obj.blob, "test")
+        self.assertEqual(tobj.blob, "test")
+        self.assert_(isinstance(tobj.blob, db.Blob))
