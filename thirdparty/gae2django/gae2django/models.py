@@ -12,3 +12,4 @@ class RegressionTestModel(db.Model):
     xlist = db.ListProperty(str)
     xuser = db.UserProperty(auto_current_user_add=True)
     ref = db.ReferenceProperty(RefTestModel)
+    blob = db.BlobProperty()

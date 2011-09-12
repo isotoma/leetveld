@@ -46,6 +46,8 @@ class MemcacheTest(unittest.TestCase):
         assert result['foo'] == 'bar'
         assert result['bar'] == 'foo'
         assert ('DOES_NOT_EXIST' in result) == False
+        memcache.delete('foo')
+        memcache.delete('bar')
         memcache.set('x_foo', 'bar')
         memcache.set('x_bar', 'foo')
         result = memcache.get_multi(['foo', 'bar'], key_prefix='x_')

@@ -76,10 +76,11 @@ def fetch(url, payload=None, method=GET, headers={}, allow_truncated=False):
                 connection.close()
 
             if http_response.status in REDIRECT_STATUSES:
-                url = http_response.getheader('Location', None)
-                if url is None:
+                newurl = http_response.getheader('Location', None)
+                if newurl is None:
                     raise DownloadError('Redirect is missing Location header.')
                 else:
+                    url = urlparse.urljoin(url, newurl)
                     method = 'GET'
             else:
                 response = Response()

@@ -4,8 +4,19 @@
 
 import os
 
-#from distutils.core import setup
-from setuptools import setup, find_packages
+from distutils.core import setup
+
+
+def find_packages(base_dir):
+    yield base_dir
+    for fname in os.listdir(base_dir):
+        if fname.startswith('.'):
+            continue
+        fullpath = os.path.join(base_dir, fname)
+        if os.path.isdir(fullpath):
+            for item in find_packages(fullpath):
+                yield item
+
 
 setup(
     name='django-gae2django',
@@ -14,7 +25,7 @@ setup(
     author='Andi Albrecht',
     author_email='albrecht.andi@gmail.com',
     url='http://code.google.com/p/django-gae2django/',
-    packages=find_packages(),
+    packages=list(find_packages('gae2django')),
     license='Apache',
     classifiers=[
         'Development Status :: 4 - Beta',
