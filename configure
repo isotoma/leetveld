@@ -1,0 +1,40 @@
+#! /usr/bin/env python
+#
+# Generic isotoma.stack.django config file
+#
+
+from optparse import OptionParser
+import os
+
+parser = OptionParser()
+parser.add_option('-e', '--environment', dest='environment',
+                  help='What kind of deployment?', default='dev')
+parser.add_option('-c', '--extraconfig', dest='extraconfig',
+                  help='Comma-separated config files to add to the buildout',
+                  default='')
+
+options, args = parser.parse_args()
+
+template = '[buildout]\n' \
+           'extends =\n' \
+           '%(extends)s\n' \
+           'cwd = %(cwd)s\n'
+
+extends = [
+    'isotoma/base.cfg',
+]
+
+if options.environment != 'dev':
+    extends.extend([
+        'isotoma/environment/%s/environment.cfg' % options.environment,
+    ])
+
+if options.extraconfig:
+    extends.append(options.extraconfig)
+
+open('buildout.cfg', 'w').write(
+    template % {
+        'extends': '\n'.join('    %s' % e for e in extends),
+        'cwd': os.getcwd(),
+    }
+)
