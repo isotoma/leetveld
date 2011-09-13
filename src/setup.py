@@ -17,7 +17,7 @@ setup(
         ]
     },
     install_requires = [
-        'django-gae2django==0.1-isotoma2'
+        'django-gae2django==0.1-isotoma2',
     ],
 )
 
