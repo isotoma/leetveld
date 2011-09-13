@@ -1,5 +1,5 @@
 
-from codereview import models
+from leetveld import models
 
 class AddUserToRequestMiddleware(object):
     """Just add the account..."""
@@ -14,7 +14,7 @@ class AddUserToRequestMiddleware(object):
         request.user_is_admin = is_admin
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        is_rietveld = view_func.__module__.startswith('codereview')
+        is_rietveld = view_func.__module__.startswith('leetveld')
         user = request.user
         if is_rietveld and user.is_anonymous():
             request.user = None
