@@ -26,6 +26,7 @@ extends = [
 
 if options.environment != 'dev':
     extends.extend([
+        'isotoma/fullstack.cfg',
         'isotoma/environment/%s/environment.cfg' % options.environment,
     ])
 
