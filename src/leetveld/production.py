@@ -13,7 +13,7 @@ DATABASES = {
     }
 }
 
-LOG_FILE = '/var/log/leetveld-production/leetveld.log'
+LOG_FILE = '/var/log/leetveld/leetveld.log'
 
 LOGGING = {
     'version': 1,
