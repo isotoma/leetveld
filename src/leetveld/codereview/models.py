@@ -780,10 +780,10 @@ class Account(db.Model):
     # This code assumes that
     # self.user.email() == users.get_current_user().email()
     current_user = users.get_current_user()
-    if self.user.user_id() != current_user.user_id():
+    if self.user.id != current_user.id:
       # Mainly for Google Account plus conversion.
       logging.info('Updating user_id for %s from %s to %s' % (
-        self.user.email(), self.user.user_id(), current_user.user_id()))
+        self.user.email(), self.user.id, current_user.id))
       self.user = current_user
       self.put()
     if not self.xsrf_secret:
