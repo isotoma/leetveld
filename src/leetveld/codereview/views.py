@@ -639,7 +639,8 @@ def login_required(func):
   """Decorator that redirects to the login page if you're not logged in."""
 
   def login_wrapper(request, *args, **kwds):
-    if request.user is None:
+    from django.contrib.auth.models import AnonymousUser
+    if request.user is None or request.user is AnonymousUser:
       return HttpResponseRedirect(
           users.create_login_url(request.get_full_path().encode('utf-8')))
     return func(request, *args, **kwds)
@@ -1058,6 +1059,7 @@ def _paginate_issues_with_cursor(page_url,
   return _inner_paginate(request, issues, template, params)
 
 
+@login_required
 def all(request):
   """/all - Show a list of up to DEFAULT_LIMIT recent issues."""
   closed = request.GET.get('closed') or ''
@@ -1136,6 +1138,7 @@ def _load_users_for_issues(issues):
   library.get_links_for_users(user_dict.keys())
 
 @user_key_required
+@login_required
 def show_user(request):
   """/user - Show the user's dashboard"""
   return _show_user(request)
@@ -1810,6 +1813,7 @@ def _get_patchset_info(request, patchset_id):
 
 
 @issue_required
+@login_required
 def show(request, form=None):
   """/<issue> - Show an issue."""
   issue, patchsets, response = _get_patchset_info(request, None)
@@ -2087,6 +2091,7 @@ def mailissue(request):
 
 
 @patchset_required
+@login_required
 def download(request):
   """/download/<issue>_<patchset>.diff - Download a patch set."""
   if request.patchset.data is None:
@@ -2159,6 +2164,7 @@ def fields(request):
 
 
 @patch_required
+@login_required
 def patch(request):
   """/<issue>/patch/<patchset>/<patch> - View a raw patch."""
   return patch_helper(request)
@@ -2197,12 +2203,14 @@ def patch_helper(request, nav_type='patch'):
 
 
 @image_required
+@login_required
 def image(request):
   """/<issue>/content/<patchset>/<patch>/<content> - Return patch's content."""
   return HttpResponse(request.content.data)
 
 
 @patch_required
+@login_required
 def download_patch(request):
   """/download/issue<issue>_<patchset>_<patch>.diff - Download patch."""
   return HttpResponse(request.patch.text, content_type='text/plain')
@@ -2325,6 +2333,7 @@ def _get_column_width_for_user(request):
 
 
 @patch_filename_required
+@login_required
 def diff(request):
   """/<issue>/diff/<patchset>/<patch> - View a patch as a side-by-side diff"""
   if request.patch.no_base_file:
@@ -2397,6 +2406,7 @@ def _get_diff_table_rows(request, patch, context, column_width):
 
 @patch_required
 @json_response
+@login_required
 def diff_skipped_lines(request, id_before, id_after, where, column_width):
   """/<issue>/diff/<patchset>/<patch> - Returns a fragment of skipped lines.
 
@@ -2536,6 +2546,7 @@ def _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, context,
 
 
 @issue_required
+@login_required
 def diff2(request, ps_left_id, ps_right_id, patch_filename):
   """/<issue>/diff2/... - View the delta between two different patch sets."""
   context = _get_context_for_user(request)
@@ -2583,6 +2594,7 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
 
 @issue_required
 @json_response
+@login_required
 def diff2_skipped_lines(request, ps_left_id, ps_right_id, patch_id,
                         id_before, id_after, where, column_width):
   """/<issue>/diff2/... - Returns a fragment of skipped lines"""
@@ -3337,7 +3349,7 @@ def search(request):
 
 ### Repositories and Branches ###
 
-
+@login_required
 def repos(request):
   """/repos - Show the list of known Subversion repositories."""
   # Clean up garbage created by buggy edits

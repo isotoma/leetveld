@@ -16,12 +16,18 @@ import datetime
 import md5
 
 from django.contrib.syndication.feeds import Feed
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils.feedgenerator import Atom1Feed
+from django.contrib.auth.models import AnonymousUser
 
 import library
 import models
+
+def login_required(user):
+    """ Raises an error if the user is not logged in """
+    if user is None or type(user) is AnonymousUser:
+        raise PermissionDenied
 
 
 class BaseFeed(Feed):
@@ -86,6 +92,7 @@ class BaseUserFeed(BaseFeed):
     has more than one element or if the a user with that nickname
     doesn't exist.
     """
+    login_required(self.request.user)
     if len(bits) != 1:
       raise ObjectDoesNotExist
     obj = bits[0]
@@ -99,6 +106,7 @@ class ReviewsFeed(BaseUserFeed):
   title = 'Code Review - All issues I have to review'
 
   def items(self, obj):
+    login_required(self.request.user)
     return _rss_helper(obj.email, 'closed = FALSE AND reviewers = :1',
                        use_email=True)
 
@@ -107,6 +115,7 @@ class ClosedFeed(BaseUserFeed):
   title = "Code Review - Reviews closed by me"
 
   def items(self, obj):
+    login_required(self.request.user)
     return _rss_helper(obj.email, 'closed = TRUE AND owner = :1')
 
 
@@ -114,6 +123,7 @@ class MineFeed(BaseUserFeed):
   title = 'Code Review - My issues'
 
   def items(self,obj):
+    login_required(self.request.user)
     return _rss_helper(obj.email, 'closed = FALSE AND owner = :1')
 
 
@@ -121,6 +131,7 @@ class AllFeed(BaseFeed):
   title = 'Code Review - All issues'
 
   def items(self):
+    login_required(self.request.user)
     query = models.Issue.gql('WHERE closed = FALSE AND private = FALSE '
                              'ORDER BY modified DESC')
     return query.fetch(RSS_LIMIT)
@@ -133,6 +144,7 @@ class OneIssueFeed(BaseFeed):
     return reverse('codereview.views.index')
 
   def get_object(self, bits):
+    login_required(self.request.user)
     if len(bits) != 1:
       raise ObjectDoesNotExist
     obj = models.Issue.get_by_id(int(bits[0]))
@@ -144,6 +156,7 @@ class OneIssueFeed(BaseFeed):
     return 'Code review - Issue %d: %s' % (obj.key().id(),obj.subject)
 
   def items(self, obj):
+    login_required(self.request.user)
     all = list(obj.patchset_set) + list(obj.message_set)
     all.sort(key=self.item_pubdate)
     return all
