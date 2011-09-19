@@ -3,10 +3,7 @@
 {%block body%}
 
 <script language="JavaScript" type="text/javascript"><!--
-function keyPressIntermediary(evt) {
-  return M_keyPress(evt);
-}
-document.onkeypress = keyPressIntermediary;
+document.onkeydown = M_keyDown;
 {%if user%}
 logged_in = true;
 {%else%}
@@ -19,16 +16,21 @@ login_warned = false;
 {%if user%}
 <!-- Form used by in-line comment JS; XXX filled in by JS code -->
 <form id="dainlineform" style="display: none;"
-      action="{%url leetveld.views.inline_draft%}" method="post">
-  <div class="comment-border" name="form-container">
+      action="{%url codereview.views.inline_draft%}" method="post">
+  <div class="comment-border">
     <input type="hidden" name="snapshot" value="XXX">
     <input type="hidden" name="lineno" value="XXX">
     <input type="hidden" name="side" value="XXX">
     <input type="hidden" name="issue" value="{{issue.key.id}}">
+    {%if patch_left%}
     <input type="hidden" name="ps_left" value="{{ps_left.key.id}}">
     <input type="hidden" name="patch_left" value="{{patch_left.key.id}}">
     <input type="hidden" name="ps_right" value="{{ps_right.key.id}}">
     <input type="hidden" name="patch_right" value="{{patch_right.key.id}}">
+    {%else%}
+    <input type="hidden" name="patchset" value="{{ps_right.key.id}}">
+    <input type="hidden" name="patch" value="{{patch_right.key.id}}">
+    {%endif%}
     <textarea name="text" cols="60" rows="5"></textarea><br>
     <input type="submit" name="save" value="Save"
            onclick="return M_submitInlineComment(this.form);">
@@ -37,22 +39,20 @@ login_warned = false;
   </div>
   <div class="comment-border" style="padding: 0pt;"></div>
 </form>
-<a id="resizer" style="display:none;cursor:pointer"><img src="/static/zippyplus.gif"></a>
+<a id="resizer" style="display:none;cursor:pointer"><img src="{{media_url}}zippyplus.gif"></a>
 {%endif%}
 
 <div style="float: left;">
   <h2 style="margin-bottom: 0em; margin-top: 0em;">Delta Between Two Patch Sets: {{patch_right.filename}}</h2>
   <div style="margin-top: .2em;">
     {%include "issue_star.html"%}
-    <b>Issue <a href="{%url leetveld.views.show issue.key.id%}" onmouseover="M_showPopUp(this, 'popup-issue');" id="upCL">{{issue.key.id}}</a>:</b>
+    <b>Issue <a href="{%url codereview.views.show issue.key.id%}" onmouseover="M_showPopUp(this, 'popup-issue');" id="upCL">{{issue.key.id}}</a>:</b>
   {{issue.subject}} {%if issue.closed %} (Closed) {%endif%}
-  {%if issue.base%}<span class="extra">SVN Base: {{issue.base}}</span>{%endif%}</div>
+  {%if issue.base%}<span class="extra">Base URL: {{issue.base}}</span>{%endif%}</div>
   <div style="margin-top: .4em;">
     <b>Left Patch Set: {%if ps_left.message%}{{ps_left.message}}{%endif%}</b>
     <span class="extra">
     Created {{ps_left.created|timesince}} ago
-    {%ifnotequal ps_left.owner issue.owner%}
-    by <b>{{ps_left.owner|show_user}}</b>{%endifnotequal%}
     {%if ps_left.url%},
     Downloaded from: <a href="{{ps_left.url}}">{{ps_left.url}}</a>
     {%endif%}
@@ -62,12 +62,36 @@ login_warned = false;
     <b>Right Patch Set: {%if ps_right.message%}{{ps_right.message}}{%endif%}</b>
     <span class="extra">
     Created {{ps_right.created|timesince}} ago
-    {%ifnotequal ps_right.owner issue.owner%}
-    by <b>{{ps_right.owner|show_user}}</b>{%endifnotequal%}
     {%if ps_right.url%},
     Downloaded from: <a href="{{ps_right.url}}">{{ps_right.url}}</a>
     {%endif%}
     </span>
+  </div>
+  <div style="margin-top: .4em">
+    <table>
+      <tr>
+        <td>Left:</td>
+        <td>
+          <select name="left" id="left">
+            <option value="-1">Base</option>
+            {%for p in patchsets%}
+            <option value="{{p.key.id}}" {%ifequal ps_left.key.id p.key.id%}selected="selected"{%endifequal%}>Patch Set {{forloop.counter}}: {{p.message}}</option>
+            {%endfor%}
+          </select>
+        </td>
+        <td rowspan="2"><input type="button" value="Go" onclick="M_navigateDiff({{issue.key.id}}, '{{filename|escapejs}}')"></td>
+      </tr>
+      <tr>
+        <td>Right:</td>
+        <td>
+          <select name="right" id="right">
+            {%for p in patchsets%}
+            <option value="{{p.key.id}}" {%ifequal ps_right.key.id p.key.id%}selected="selected"{%endifequal%}>Patch Set {{forloop.counter}}: {{p.message}}</option>
+            {%endfor%}
+          </select>
+        </td>
+      </tr>
+    </table>
   </div>
   <div style="margin-top: .4em;" class="help">
     Use n/p to move between diff chunks;
@@ -75,7 +99,7 @@ login_warned = false;
     {%if user%}
     Double-click a line to add a draft in-line comment.
     <br><span style="color:red">Draft comments are only viewable by you;</span>
-    use <a href="{%url leetveld.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
+    use <a href="{%url codereview.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
     {%else%}
     Please Sign in to add in-line comments.
     {%endif%}
@@ -84,29 +108,33 @@ login_warned = false;
 <div style="float: right; color: #333333; background-color: #eeeeec; border: 1px solid lightgray; -moz-border-radius: 5px 5px 5px 5px; padding: 5px;">
   <div>{%include "view_details_select.html"%}</div>
   <div>
-    Jump to: <select onchange="M_jumpToPatch(this, {{issue.key.id}}, {{ps_right.key.id}});">
+    Jump to: <select onchange="M_jumpToPatch(this, {{issue.key.id}}, '{{ps_left.key.id}}:{{ps_right.key.id}}', false, 'diff2');">
       {% for jump_patch in ps_right.patches %}
-        <option value="{{jump_patch.key.id}}"
-         {%ifequal jump_patch.key.id patch.key.id%} selected="selected"{%endifequal%}>{{jump_patch.filename}}</option>
+        <option value="{{jump_patch.filename}}"
+         {%ifequal jump_patch.key.id patch_right.key.id%} selected="selected"{%endifequal%}>{{jump_patch.filename}}</option>
       {% endfor %}
     </select>
   </div>
   <div>
-    Left: <a href="{%url leetveld.views.diff issue.key.id,ps_left.key.id,patch_left.key.id%}{%urlappend_view_settings%}"
+    {%if patch_left%}
+    Left: <a href="{%url codereview.views.diff issue.key.id,ps_left.key.id,patch_left.filename%}{%urlappend_view_settings%}"
              title="View regular side by side diff">Side by side diff</a>
           |
-          <a href="{%url leetveld.views.download_patch issue.key.id,ps_left.key.id,patch_left.key.id%}"
+          <a href="{%url codereview.views.download_patch issue.key.id,ps_left.key.id,patch_left.key.id%}"
              title="Download patch for {{patch_left.filename}}">Download</a>
           <br/>
-    Right: <a href="{%url leetveld.views.diff issue.key.id,ps_right.key.id,patch_right.key.id%}{%urlappend_view_settings%}"
+    {%endif%}
+    {%if patch_right%}
+    Right: <a href="{%url codereview.views.diff issue.key.id,ps_right.key.id,patch_right.filename%}{%urlappend_view_settings%}"
               title="View regular side by side diff">Side by side diff</a>
            |
-           <a href="{%url leetveld.views.download_patch issue.key.id,ps_right.key.id,patch_right.key.id%}"
+           <a href="{%url codereview.views.download_patch issue.key.id,ps_right.key.id,patch_right.key.id%}"
              title="Download patch for {{patch_right.filename}}">Download</a>
+    {%endif%}
     {%if user%}
   </div>
   <div style="margin-top: 5px;">
-    <a class="novisit" href="{%url leetveld.views.publish issue.key.id%}">Publish+Mail
+    <a class="novisit" href="{%url codereview.views.publish issue.key.id%}">Publish+Mail
     Comments</a> ('m')
     |
     <a class="novisit" href="javascript:draftMessage.dialog_show()">Edit draft message</a> ('M')
@@ -120,21 +148,33 @@ login_warned = false;
 <div class="codenav">
 {%comment%}
 For some reason,
-{%url leetveld.views.diff issue.key.id,patchset.key.id,patch.prev.key.id%}
+{%url codereview.views.diff issue.key.id,patchset.key.id,patch.prev.filename%}
 doesn't work.  Go figure.  Bleah.  So use absolute URLs.
 {%endcomment%}
+{%if patch_right.prev_with_comment%}
+<a id="prevFileWithComment"
+   href="{%url codereview.views.diff2 issue.key.id,ps_left.key.id,ps_right.key.id,patch_right.prev_with_comment.filename%}{%urlappend_view_settings%}">
+&laquo; {{patch_right.prev_with_comment.filename}}</a> ('K'){%else%}
+<span class="disabled">&laquo; no previous file with change/comment</span>{%endif%}
+|
 {%if patch_right.prev%}
-<a id="prevFile" 
-   href="/{{issue.key.id}}/diff2/{{ps_left.key.id}}:{{ps_right.key.id}}/{{patch_right.prev.key.id}}{%urlappend_view_settings%}">
+<a id="prevFile"
+   href="{%url codereview.views.diff2 issue.key.id,ps_left.key.id,ps_right.key.id,patch_right.prev.filename%}{%urlappend_view_settings%}">
 &laquo; {{patch_right.prev.filename}}</a> ('k'){%else%}
 <span class="disabled">&laquo; no previous file</span>{%endif%}
 |
 {%if patch_right.next%}
 <a id="nextFile"
-   href="/{{issue.key.id}}/diff2/{{ps_left.key.id}}:{{ps_right.key.id}}/{{patch_right.next.key.id}}{%urlappend_view_settings%}">
+   href="{%url codereview.views.diff2 issue.key.id,ps_left.key.id,ps_right.key.id,patch_right.next.filename%}{%urlappend_view_settings%}">
 {{patch_right.next.filename}} &raquo;</a> ('j'){%else%}
 <span class="disabled">no next file &raquo;</span>{%endif%}
 |
+{%if patch_right.next_with_comment%}
+<a id="nextFileWithComment"
+   href="{%url codereview.views.diff2 issue.key.id,ps_left.key.id,ps_right.key.id,patch_right.next_with_comment.filename%}{%urlappend_view_settings%}">
+{{patch_right.next_with_comment.filename}} &raquo;</a> ('J'){%else%}
+<span class="disabled">no next file with change/comment &raquo;</span>{%endif%}
+<br/>
 <a href="javascript:if (intraLineDiff) intraLineDiff.toggle()">
 Toggle Intra-line Diffs</a> ('i')
 |
@@ -153,17 +193,24 @@ Toggle Intra-line Diffs</a> ('i')
 <span id="hook-sel" style="display:none;"></span>
 
 <table border="0" cellpadding="0" cellspacing="0" id="thecode"
-       ondblclick="M_handleTableDblClick(event)" width="100%">
+       ondblclick="M_handleTableDblClick(event)"
+       ontouchstart="M_handleTableTouchStart(event)"
+       ontouchend="M_handleTableTouchEnd(event)"
+       width="100%">
 
 <tr><th>LEFT</th><th>RIGHT</th></tr>
 
 {%if patch_right.is_binary %}
 <tr>
 <td style="width:50%" align="center">
-  <img src="{%url leetveld.views.image issue.key.id,ps_left.key.id,patch_left.key.id,1%}" />
+  {%if patch_left%}
+  <img src="{%url codereview.views.image issue.key.id,ps_left.key.id,patch_left.key.id,1%}" />
+  {%else%}
+  <img src="{%url codereview.views.image issue.key.id,ps_right.key.id,patch_right.key.id,0%}" />
+  {%endif%}
 </td>
 <td style="width:50%" align="center">
-  <img src="{%url leetveld.views.image issue.key.id,ps_right.key.id,patch_right.key.id,1%}" />
+  <img src="{%url codereview.views.image issue.key.id,ps_right.key.id,patch_right.key.id,1%}" />
 </td>
 </tr>
 {%else%}
@@ -179,13 +226,13 @@ Toggle Intra-line Diffs</a> ('i')
 <div class="codenav">
 {%if patch_right.prev%}
 <a id="prevFile"
-   href="/{{issue.key.id}}/diff2/{{ps_left.key.id}}:{{ps_right.key.id}}/{{patch_right.prev.key.id}}{%urlappend_view_settings%}">
+   href="{%url codereview.views.diff2 issue.key.id,ps_left.key.id,ps_right.key.id,patch_right.prev.filename%}{%urlappend_view_settings%}">
 &laquo; {{patch_right.prev.filename}}</a> ('k'){%else%}
 <span class="disabled">&laquo; no previous file</span>{%endif%}
 |
 {%if patch_right.next%}
 <a id="nextFile"
-   href="/{{issue.key.id}}/diff2/{{ps_left.key.id}}:{{ps_right.key.id}}/{{patch_right.next.key.id}}{%urlappend_view_settings%}">
+   href="{%url codereview.views.diff2 issue.key.id,ps_left.key.id,ps_right.key.id,patch_right.next.filename%}{%urlappend_view_settings%}">
 {{patch_right.next.filename}} &raquo;</a> ('j'){%else%}
 <span class="disabled">no next file &raquo;</span>{%endif%}
 |
@@ -201,17 +248,20 @@ Toggle Comments</a> ('s')
 </div>
 
 </div>
-</script>
 <script language="JavaScript" type="text/javascript"><!--
+{%if patch_left%}
 var old_snapshot = "new";
+{%else%}
+var old_snapshot = "old";
+{%endif%}
 var new_snapshot = "new";
 var intraLineDiff = new M_IntraLineDiff();
 var hookState = new M_HookState(window);
 hookState.updateHooks();
 
-var skipped_lines_url = ('/' + {{issue.key.id}} + '/diff2_skipped_lines/' +
-                         {{ps_left.key.id}} + ':' + {{ps_right.key.id}} + '/' +
-                         {{patch_id}} + '/');
+{%if patch_right%}
+var skipped_lines_url = ('{%url diff2_skipped_lines_prefix issue.key.id,ps_left.key.id,ps_right.key.id,patch_id%}');
+{%endif%}
 // -->
 </script>
 

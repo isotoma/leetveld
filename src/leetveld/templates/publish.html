@@ -1,5 +1,6 @@
 {%extends "issue_base.html"%}
 {%block title1%}Publish+Mail -{%endblock%}
+{%block head%}{{form.media}}{%endblock%}
 {%block issue_body%}
 <script><!--
 function discard(btn) {
@@ -14,7 +15,7 @@ draftMessage = new M_draftMessage({{issue.key.id}}, true);
 <h2>Publish + Mail Draft Comments</h2>
 
 <div>
-  <form action="{%url leetveld.views.publish issue.key.id%}"
+  <form action="{%url codereview.views.publish issue.key.id%}"
         method="post" id="publish-form">
   <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
   <table>
@@ -40,9 +41,10 @@ draftMessage = new M_draftMessage({{issue.key.id}}, true);
   </form>
 
   <a id="resizer" style="display:none;cursor:pointer">
-  <img src="/static/zippyplus.gif"></a>
+  <img src="{{media_url}}zippyplus.gif"></a>
   <script language="JavaScript" type="text/javascript"><!--
   M_addTextResizer_(document.getElementById("publish-form"));
+  document.getElementById("id_message").focus();
   --></script>
 
 </div>

@@ -8,19 +8,17 @@
   <div class="pagination">
     <div style="float: left;">
       <i>Created:</i> {{patchset.created|timesince}} ago
-      {%ifnotequal patchset.owner issue.owner%}
-      by <b>{{patchset.owner|nickname}}</b>{%endifnotequal%}
     </div>
     <div style="float: right;">
       {%if patchset.data%}
-        <a href="{%url leetveld.views.download issue.key.id,patchset.key.id%}">
+        <a href="{%url codereview.views.download issue.key.id,patchset.key.id%}">
           Download raw patch set</a>
       {% else %}
         <span class="disabled">(Patch set is too large to download)</span>
       {% endif %}
       {%ifnotequal 1 num_patchsets%}
-        {%ifequal patchset.owner user%}
-        <form method="post" action="{%url leetveld.views.delete_patchset issue.key.id patchset.key.id %}">
+        {%ifequal issue.owner user%}
+        <form method="post" action="{%url codereview.views.delete_patchset issue.key.id patchset.key.id %}">
           <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
           <input type="hidden" name="_method" value="delete" />
           |<input onclick="return confirm('Are you sure?');"
@@ -44,29 +42,29 @@
 
     {%for patch in patchset.patches%}
       <tr name="patch">
-        <td class="first" width="14"><img src="/static/closedtriangle.gif" 
+        <td class="first" width="14"><img src="{{media_url}}closedtriangle.gif" 
     style="visibility: hidden;" width="12" height="9" /></td>
-        <td>{%if patch.status%}{{patch.status}}{%endif%}</td>
+        <td style="white-space: nowrap">{%if patch.status%}{{patch.status}}{%endif%}</td>
         <td>
           <a class="noul"
-             href="{%url leetveld.views.patch issue.key.id,patchset.key.id,patch.key.id%}">
+             href="{%url codereview.views.patch issue.key.id,patchset.key.id,patch.key.id%}">
             {{patch.filename}}
           </a>
         </td>
         <td>
           <a class="noul"
-             href="{%url leetveld.views.diff issue.key.id,patchset.key.id,patch.key.id%}">
+             href="{%url codereview.views.diff issue.key.id,patchset.key.id,patch.filename%}">
             View
           </a>
         </td>
         <td style="white-space: nowrap">
         {%for delta in patch.parsed_deltas%}
-          <a href="/{{issue.key.id}}/diff2/{{delta.1}}:{{patchset.key.id}}/{{patch.key.id}}"
+          <a href="{%url codereview.views.diff2 issue.key.id,delta.1,patchset.key.id,patch.filename%}"
              title="Delta from patch set {{delta.0}}">{{delta.0}}</a>
         {%endfor%}
         </td>
         <td style="white-space: nowrap">{{patch.num_chunks}} chunk{{patch.num_chunks|pluralize}}</td>
-        <td style="white-space: nowrap">{{patch.num_lines}} line{{patch.num_lines|pluralize}}</td>
+        <td style="white-space: nowrap">+{{patch.num_added}} line{{patch.num_added|pluralize}}, -{{patch.num_removed}} line{{patch.num_removed|pluralize}}</td>
         <td style="white-space: nowrap">
           {%if patch.num_comments or patch.num_drafts%}<b>{%endif%}
             {{patch.num_comments}} comment{{patch.num_comments|pluralize}}
@@ -78,7 +76,7 @@
           {%if patch.num_comments or patch.num_drafts%}</b>{%endif%}
         </td>
         <td>
-          <a href="{%url leetveld.views.download_patch issue.key.id,patchset.key.id,patch.key.id%}"
+          <a href="{%url codereview.views.download_patch issue.key.id,patchset.key.id,patch.key.id%}"
              title="Download patch for {{patch.filename}}">
             Download
           </a>

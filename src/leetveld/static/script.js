@@ -78,6 +78,14 @@ function M_isIE() {
 }
 
 /**
+ * Function to determine if we are in a WebKit-based browser (Chrome/Safari).
+ * @return Boolean of whether we are in a WebKit browser
+ */
+function M_isWebKit() {
+  return navigator.userAgent.toLowerCase().indexOf("webkit") != -1;
+}
+
+/**
  * Stop the event bubbling in a browser-independent way. Sometimes required
  * when it is not easy to return true when an event is handled.
  * @param {Window} win The window in which this event is happening
@@ -377,19 +385,23 @@ function M_hideAllDiffs(num) {
 
 /**
  * Changes the elements display style to "" which renders it visible.
- * @param {String} id The id of the target element
+ * @param {String|Element} elt The id of the element or the element itself
  */
-function M_showElement(id) {
-  var elt = document.getElementById(id);
+function M_showElement(elt) {
+  if (typeof elt == "string") {
+    elt = document.getElementById(elt);
+  }
   if (elt) elt.style.display = "";
 }
 
 /**
  * Changes the elements display style to "none" which renders it invisible.
- * @param {String} id The id of the target element
+ * @param {String|Element} elt The id of the element or the element itself
  */
-function M_hideElement(id) {
-  var elt = document.getElementById(id);
+function M_hideElement(elt) {
+  if (typeof elt == "string") {
+    elt = document.getElementById(elt);
+  }
   if (elt) elt.style.display = "none";
 }
 
@@ -404,10 +416,10 @@ function M_toggleSection(id) {
 
   if (sectionStyle.display == "none") {
     sectionStyle.display = "";
-    pointerStyle.backgroundImage = "url('/static/opentriangle.gif')";
+    pointerStyle.backgroundImage = "url('" + media_url + "opentriangle.gif')";
   } else {
     sectionStyle.display = "none";
-    pointerStyle.backgroundImage = "url('/static/closedtriangle.gif')";
+    pointerStyle.backgroundImage = "url('" + media_url + "closedtriangle.gif')";
   }
 }
 
@@ -448,7 +460,7 @@ function M_toggleSectionForPS(issue, patchset) {
   if (!http_request)
     return;
 
-  http_request.open('GET', "/" + issue + "/patchset/" + patchset, true);
+  http_request.open('GET', base_url + issue + "/patchset/" + patchset, true);
   http_request.onreadystatechange = M_PatchSetFetched;
   http_request.div_id = id;
   http_request.send(null);
@@ -474,15 +486,16 @@ function M_switchChangelistComment(cid) {
 }
 
 /**
- * Toggles a comment if the anchor is of the form '#msg-KEY'.
+ * Toggles a comment if the anchor is of the form '#msgNUMBER'.
  */
-function M_switchChangelistCommentByAnchor() {
+function M_toggleIssueMessageByAnchor() {
   var href = window.location.href;
   var idx_hash = href.lastIndexOf('#');
   if (idx_hash != -1) {
     var anchor = href.slice(idx_hash+1, href.length);
-    if (anchor.slice(0, 4) == 'msg-') {
+    if (anchor.slice(0, 3) == 'msg') {
       var elem = document.getElementById(anchor);
+      elem.className += ' referenced';
       var num = elem.getAttribute('name');
       M_switchChangelistComment(num);
     }
@@ -543,9 +556,8 @@ function M_switchMoveOut(start_line, end_line) {
  */
 function M_showAllComments(prefix, num_comments) {
   for (var i = 0; i < num_comments; i++) {
-    document.getElementById(prefix + "-preview-" + i).style.visibility =
-        "hidden";
-    document.getElementById(prefix + "-comment-" + i).style.display = "";
+    M_hideElement(prefix + "-preview-" + i);
+    M_showElement(prefix + "-comment-" + i);
   }
 }
 
@@ -557,9 +569,8 @@ function M_showAllComments(prefix, num_comments) {
  */
 function M_hideAllComments(prefix, num_comments) {
   for (var i = 0; i < num_comments; i++) {
-    document.getElementById(prefix + "-preview-" + i).style.visibility =
-        "visible";
-    document.getElementById(prefix + "-comment-" + i).style.display = "none";
+    M_showElement(prefix + "-preview-" + i);
+    M_hideElement(prefix + "-comment-" + i);
   }
 }
 
@@ -583,12 +594,12 @@ function M_switchCommentCommon_(prefix, suffix) {
           'this message with the URL to the app owner');
     return;
   }
-  if (previewSpan.style.visibility == 'hidden') {
-    previewSpan.style.visibility = 'visible';
-    commentDiv.style.display = 'none';
+  if (previewSpan.style.display == 'none') {
+    M_showElement(previewSpan);
+    M_hideElement(commentDiv);
   } else {
-    previewSpan.style.visibility = 'hidden';
-    commentDiv.style.display = '';
+    M_hideElement(previewSpan);
+    M_showElement(commentDiv);
   }
 }
 
@@ -676,30 +687,34 @@ function M_replyToComment(author, written_time, ccs, cid, prefix, opt_lineno,
 function M_replyToMessage(message_id, written_time, author) {
   var form = document.getElementById('message-reply-form');
   form = form.cloneNode(true);
-  if (typeof form.message == 'undefined') {
-    var form_template = document.getElementById('message-reply-form');
-    form = document.createElement('form');
-    form.setAttribute('method', 'POST');
-    form.setAttribute('action', form_template.getAttribute('action'));
-    form.innerHTML = form_template.innerHTML;
-  }
-  container = document.getElementById('message-reply-'+message_id);
+  var container = document.getElementById('message-reply-'+message_id);
+  var replyLink = document.getElementById('message-reply-href-'+message_id);
+  var msgTextarea = replyLink.nextSibling.nextSibling;
+  form.insertBefore(msgTextarea, form.firstChild);
+  M_showElement(msgTextarea);
   container.appendChild(form);
-  container.style.display = '';
+  M_showElement(container);
+
   form.discard.onclick = function () {
-    document.getElementById('message-reply-href-'+message_id).style.display = "";
-    document.getElementById('message-reply-'+message_id).innerHTML = "";
+    form.message.value = "";
+    M_getParent(container).insertBefore(msgTextarea, replyLink.nextSibling.nextSibling);
+    M_showElement(replyLink);
+    M_hideElement(msgTextarea);
+    container.innerHTML = "";
   }
+
   form.send_mail.id = 'message-reply-send-mail-'+message_id;
   var lbl = document.getElementById(form.send_mail.id).nextSibling.nextSibling;
   lbl.setAttribute('for', form.send_mail.id);
-  form.message.value = "On " + written_time + ", " + author + " wrote:\n";
-  var divs = document.getElementsByName("cl-message-" + message_id);
-  M_setValueFromDivs(divs, form.message);
-  form.message.value += "\n";
-  form.message.focus();
+  if (!form.message.value) {
+    form.message.value = "On " + written_time + ", " + author + " wrote:\n";
+    var divs = document.getElementsByName("cl-message-" + message_id);
+    form.message.focus();
+    M_setValueFromDivs(divs, form.message);
+    form.message.value += "\n";
+  }
   M_addTextResizer_(form);
-  document.getElementById('message-reply-href-'+message_id).style.display = "none";
+  M_hideElement(replyLink);
 }
 
 
@@ -800,24 +815,16 @@ function M_createResizer_(form, suffix) {
       form.text.focus();
     };
 
-    // Using form.elements would be far more concise, but this hack is
-    // necessary because Konqueror/Safari don't populate form.elements at this
-    // point if the form is cloned.
-    var formContainer = null;
-    for (formContainer = form.firstChild; formContainer;
-         formContainer = formContainer.nextSibling) {
-      if (formContainer.getAttribute &&
-          formContainer.getAttribute("name") == "form-container") break;
-    }
-    if (!formContainer) return;
-
-    for (var n = formContainer.firstChild; n; n = n.nextSibling) {
-      if (n.nodeName == "TEXTAREA") {
-        formContainer.insertBefore(resizer, n.nextSibling);
+    var elementsLength = form.elements.length;
+    for (var i = 0; i < elementsLength; ++i) {
+      var node = form.elements[i];
+      if (node.nodeName == "TEXTAREA") {
+        var parent = M_getParent(node);
+        parent.insertBefore(resizer, node.nextSibling);
         resizer.style.display = "";
+        form.hasResizer = true;
       }
     }
-    form.hasResizer = true;
   }
 }
 
@@ -827,6 +834,9 @@ function M_createResizer_(form, suffix) {
  * @param {Element} form The form whose textarea field to update.
  */
 function M_addTextResizer_(form) {
+  if (M_isWebKit()) {
+    return; // WebKit has its own resizer.
+  }
   var elementsLength = form.elements.length;
   for (var i = 0; i < elementsLength; ++i) {
     var node = form.elements[i];
@@ -879,12 +889,6 @@ function M_createInlineComment(lineno, side) {
   var form = document.getElementById("comment-form-" + suffix);
   if (!form) {
     form = document.getElementById("dainlineform").cloneNode(true);
-    if (typeof form.save == "undefined") {
-      // For Opera form elements of the cloned form aren't accessible
-      // by name but using innerHTML works.
-      form = document.createElement("form");
-      form.innerHTML = document.getElementById("dainlineform").innerHTML;
-    }
     form.name = form.id = "comment-form-" + suffix;
     M_assignToCancel_(form, M_removeTempInlineComment);
     M_createResizer_(form, suffix);
@@ -966,11 +970,23 @@ function M_editInlineCommentCommon_(cid, lineno, side) {
     return false;
   }
   M_createResizer_(form, suffix);
+
   var texts = document.getElementsByName("comment-text-" + suffix);
   var textsLength = texts.length;
   for (var i = 0; i < textsLength; i++) {
     texts[i].style.display = "none";
   }
+  var hides = document.getElementsByName("comment-hide-" + suffix);
+  var hidesLength = hides.length;
+  for (var i = 0; i < hidesLength; i++) {
+    hides[i].style.display = "none";
+    var links = hides[i].getElementsByTagName("A");
+    if (links && links.length > 0) {
+      var link = links[0];
+      link.innerHTML = "Show quoted text";
+    }
+  }
+
   M_hideElement("edit-link-" + suffix);
   M_hideElement("undo-link-" + suffix);
   form.style.display = "";
@@ -1232,7 +1248,7 @@ function M_submitInlineComment(form, cid, lineno, side) {
       }
     }
   }
-  httpreq.open("POST", "/inline_draft", true);
+  httpreq.open("POST", base_url + "inline_draft", true);
   httpreq.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
   var req = [];
   var len = form.elements.length;
@@ -1291,10 +1307,16 @@ function M_removeInlineComment(form, cid, lineno, side) {
  * @param {Element} text The textarea whose value needs to be updated
  */
 function M_setValueFromDivs(divs, text) {
-  lines = [];
+  var lines = [];
   var divsLength = divs.length;
   for (var i = 0; i < divsLength; i++) {
     lines = lines.concat(divs[i].innerHTML.split("\n"));
+    // It's _fairly_ certain that the last line in the div will be
+    // empty, based on how the template works. If the last line in the
+    // array is empty, then ignore it.
+    if (lines.length > 0 && lines[lines.length - 1] == "") {
+      lines.length = lines.length - 1;
+    }
   }
   for (var i = 0; i < lines.length; i++) {
     // Undo the <a> tags added by urlize and urlizetrunc
@@ -1330,7 +1352,14 @@ function M_resetAndHideInlineComment(form, cid, lineno, side) {
   var texts = document.getElementsByName("comment-text-" + suffix);
   var textsLength = texts.length;
   for (var i = 0; i < textsLength; i++) {
-    texts[i].style.display = "";
+    if (texts[i].className.indexOf("comment-text-quoted") < 0) {
+      texts[i].style.display = "";
+    }
+  }
+  var hides = document.getElementsByName("comment-hide-" + suffix);
+  var hidesLength = hides.length;
+  for (var i = 0; i < hidesLength; i++) {
+    hides[i].style.display = "";
   }
   M_showElement("edit-link-" + suffix);
   hookState.gotoHook(0);
@@ -1348,11 +1377,15 @@ function M_switchQuotedText(cid, bid, lineno, side) {
   var tmp = ""
   if (typeof lineno != 'undefined' && typeof side != 'undefined')
     tmp = "-" + lineno + "-" + side;
-  var div = document.getElementById("comment-text-" + cid + tmp + "-" + bid)
+  var extra = cid + tmp + "-" + bid;
+  var div = document.getElementById("comment-text-" + extra);
+  var a = document.getElementById("comment-hide-link-" + extra);
   if (div.style.display == "none") {
     div.style.display = "";
+    a.innerHTML = "Hide quoted text";
   } else {
     div.style.display = "none";
+    a.innerHTML = "Show quoted text";
   }
   if (tmp != "") {
     hookState.gotoHook(0);
@@ -1393,6 +1426,43 @@ function M_handleTableDblClick(evt) {
     M_createInlineComment(parseInt(target.id.substr(7)), side);
   }
 }
+
+var M_timerLongTap = null;
+
+/**
+ * Resets the long tap timer iff activated.
+ */
+function M_clearTableTouchTimeout() {
+  if (M_timerLongTap) {
+    clearTimeout(M_timerLongTap);
+  }
+  M_timerLongTap = null;
+}
+
+/**
+ * Handles long tap events on mobile devices (touchstart).
+ *
+ * This function activates a 1sec timeout that redirects the event to
+ * M_handleTableDblClick().
+ */
+function M_handleTableTouchStart(evt) {
+  if (evt.touches && evt.touches.length == 1) { // 1 finger touch
+    M_clearTableTouchTimeout();
+    M_timerLongTap = setTimeout(function() {
+     M_clearTableTouchTimeout();
+      M_handleTableDblClick(evt);
+    }, 1000);
+  }
+}
+
+
+/**
+ * Handles touchend event for long taps on mobile devices.
+ */
+function M_handleTableTouchEnd(evt) {
+  M_clearTableTouchTimeout();
+}
+
 
 /**
  * Makes all inline comments visible. This is the default view.
@@ -1450,6 +1520,19 @@ function M_toggleAllInlineComments() {
     M_hideAllInlineComments();
   } else {
     M_showAllInlineComments();
+  }
+}
+
+/**
+ * Navigates to the diff with the requested versions on left/right
+ */
+function M_navigateDiff(issueid, filename) {
+  var left = document.getElementById('left').value;
+  var right = document.getElementById('right').value;
+  if (left == '-1') {
+    window.location.href = base_url + issueid + '/diff/' + right + '/' + filename;
+  } else {
+    window.location.href = base_url + issueid + '/diff2/' + left + ':' + right + '/' + filename;
   }
 }
 
@@ -1959,88 +2042,105 @@ function M_clickCommon(evt) {
 }
 
 /**
- * Common keypress handling code for all pages.
+ * Get a name for key combination of keydown event.
+ *
+ * See also http://unixpapa.com/js/key.html
+ */
+function M_getKeyName(evt) {
+  var name = "";
+  if (evt.ctrlKey)  { name += "Ctrl-" }
+  if (evt.altKey)   { name += "Alt-" }
+  if (evt.shiftKey) { name += "Shift-" }
+  if (evt.metaKey) { name += "Meta-" }
+  // Character keys have codes of corresponding ASCII symbols
+  if (evt.keyCode >= 65 && evt.keyCode <= 90) {
+    return name + String.fromCharCode(evt.keyCode);
+  }
+  // Numeric keys seems to have codes of corresponding ASCII symbols too
+  if (evt.keyCode >= 48 && evt.keyCode <= 57) {
+    return name + String.fromCharCode(evt.keyCode);
+  }
+  // Handling special keys
+  switch (evt.keyCode) {
+  case 27: return name + "Esc";
+  case 13: return name + "Enter";
+  case 188: return name + ",";  //  [,<]
+  case 190: return name + ".";  //  [.>]
+  case 191: return name + "/";  //  [/?]
+  case 17: // Ctrl
+  case 18: // Alt
+  case 16: // Shift
+  // case ??: Meta ?
+           return name.substr(0, name.lenght-1);
+  default:
+    name += "<"+evt.keyCode+">";
+  }
+  return name;
+}
+
+/**
+ * Common keydown handler for all pages.
  * @param {Event} evt The event object that triggered this callback
- * @param {function(string)} handler Handles the specific key pressed;
- *        returns false if the key press was handled.
+ * @param {function(string)} handler Handles the specific key name;
+ *        returns false if the key was handled.
  * @param {function(Event, Node, int, string)} input_handler
  *        Handles the event in case that the event source is an input field.
  *        returns false if the key press was handled.
  * @return false if the event was handled
  */
-function M_keyPressCommon(evt, handler, input_handler) {
-  var evt = (evt) ? evt : ((event) ? event : null);
-  if (evt) {
-    var src = M_getEventTarget(evt);
-    var nodename = src.nodeName;
-    var key, code;
-    if (evt.keyCode) {
-      code = evt.keyCode;
-    } else if (evt.which) {
-      code = evt.which;
+function M_keyDownCommon(evt, handler, input_handler) {
+  if (!evt) var evt = window.event; // for IE
+  var target = M_getEventTarget(evt);
+  var keyName = M_getKeyName(evt);
+  if (target.nodeName == "TEXTAREA" || target.nodeName == "INPUT") {
+    if (input_handler) {
+      return input_handler(target, keyName);
     }
-    key = String.fromCharCode(code);
-    if (nodename == "TEXTAREA" || nodename == "INPUT" ) {
-      if (typeof input_handler != 'undefined') {
-        return input_handler(evt, src, code, key);
-      }
-      return true;
-    }
-    if (evt.altKey || evt.altLeft ||
-        evt.ctrlKey || evt.ctrlLeft ||
-        evt.metaKey) {
-      // Ignore if any modifier keys are set
-      return true;
-    }
-    if (key == '?' ||
-	code == (window.event ? 27 /* ESC */ : evt.DOM_VK_ESCAPE)) {
-      var help = document.getElementById("help");
-      if (help && typeof helpDisplayed != "undefined") {
-	// Only allow the help to be turned on with the ? key.
-	if (helpDisplayed || key == '?') {
-	  helpDisplayed = !helpDisplayed;
-	}
-	help.style.display = helpDisplayed ? "" : "none";
-      }
-      return false;
-    }
-    return handler(key);
+    return true;
   }
-  return true;
+  if (keyName == 'Shift-/' /* '?' */ || keyName == 'Esc') {
+    var help = document.getElementById("help");
+    if (help) {
+      // Only allow the help to be turned on with the ? key.
+      if (helpDisplayed || keyName == 'Shift-/') {
+        helpDisplayed = !helpDisplayed;
+        help.style.display = helpDisplayed ? "" : "none";
+        return false;
+      }
+    }
+    return true;
+  }
+  return handler(keyName);
 }
 
 /**
- * Helper event handler for the keypress event in a comment textarea.
+ * Helper event handler for the keydown event in a comment textarea.
  * @param {Event} evt The event object that triggered this callback
  * @param {Node} src The textarea document element
- * @param {int} code The key code of the key press
- * @param {String} key The string describing the key press
- * @return false if the key press was handled
+ * @param {String} key The string with combination name
+ * @return false if the event was handled
  */
-function M_commentTextKeyPress_(evt, src, code, key) {
+function M_commentTextKeyDown_(src, key) {
   if (src.nodeName == "TEXTAREA") {
-    if (evt.ctrlKey || evt.ctrlLeft) {
-      if (key == 's' || code == 19 /* ASCII code for ^S */) {
-        // Save the form corresponding to this text area.
-        M_disableCarefulUnload();
-        if (src.form.save.onclick) {
-          return src.form.save.onclick();
-        } else {
-          src.form.submit();
-          return false;
-        }
+    if (key == 'Ctrl-S') {
+      // Save the form corresponding to this text area.
+      M_disableCarefulUnload();
+      if (src.form.save.onclick) {
+        return src.form.save.onclick();
+      } else {
+        src.form.submit();
+        return false;
       }
-    } else if (evt.altKey || evt.altLeft) {
-    } else if (evt.shiftKey || evt.shiftLeft) {
-    } else if (evt.metaKey) {
-    } else {
-      if (code == (window.event ? 27 /* ASCII code for Escape */
-                                : evt.DOM_VK_ESCAPE)) {
-	if (draftMessage) {
-	  return draftMessage.dialog_hide(true);
-	} else {
-	  return src.form.cancel.onclick();
-        }
+    }
+    if (key == 'Esc') {
+      if (src.getAttribute('id') == draftMessage.id_textarea)
+      {
+        draftMessage.dialog_hide(true);
+        src.blur();
+        return false;
+      } else {
+        // textarea of inline comment
+        return src.form.cancel.onclick();
       }
     }
   }
@@ -2048,75 +2148,85 @@ function M_commentTextKeyPress_(evt, src, code, key) {
 }
 
 /**
- * Event handler for the keypress event in the file view.
- * @param {Event} evt The event object that triggered this callback
- * @return false if the key press was handled
+ * Helper to find an item by its elementId and jump to it.  If the item
+ * cannot be found this will jump to the changelist instead.
+ * @param {elementId} the id of an element an href
  */
-function M_keyPress(evt) {
-  return M_keyPressCommon(evt, function(key) {
-    if (key == 'n') {
+function M_jumpToHrefOrChangelist(elementId) {
+  var hrefElement = document.getElementById(elementId);
+  if (hrefElement) {
+    document.location.href = hrefElement.href;
+  } else {
+    M_upToChangelist();
+  }
+}
+
+/**
+ * Event handler for the keydown event in the file view.
+ * @param {Event} evt The event object that triggered this callback
+ * @return false if the event was handled
+ */
+function M_keyDown(evt) {
+  return M_keyDownCommon(evt, function(key) {
+    if (key == 'N') {
       // next diff
       if (hookState) hookState.gotoNextHook();
-    } else if (key == 'p') {
+    } else if (key == 'P') {
       // previous diff
       if (hookState) hookState.gotoPrevHook();
-    } else if (key == 'N') {
+    } else if (key == 'Shift-N') {
       // next comment
       if (hookState) hookState.gotoNextHook(true);
-    } else if (key == 'P') {
+    } else if (key == 'Shift-P') {
       // previous comment
       if (hookState) hookState.gotoPrevHook(true);
-    } else if (key == 'j') {
+    } else if (key == 'J') {
       // next file
-      var nextFile = document.getElementById('nextFile');
-      if (nextFile) {
-        document.location.href = nextFile.href;
-      } else {
-        M_upToChangelist();
-      }
-    } else if (key == 'k') {
+      M_jumpToHrefOrChangelist('nextFile')
+    } else if (key == 'K') {
       // prev file
-      var prevFile = document.getElementById('prevFile');
-      if (prevFile) {
-        document.location.href = prevFile.href;
-      } else {
-        M_upToChangelist();
-      }
-    } else if (key == 'm') {
-      document.location.href = publish_link;
+      M_jumpToHrefOrChangelist('prevFile')
+    } else if (key == 'Shift-J') {
+      // next file with comment
+      M_jumpToHrefOrChangelist('nextFileWithComment')
+    } else if (key == 'Shift-K') {
+      // prev file with comment
+      M_jumpToHrefOrChangelist('prevFileWithComment')
     } else if (key == 'M') {
+      document.location.href = publish_link;
+    } else if (key == 'Shift-M') {
       if (draftMessage) { draftMessage.dialog_show(); }
-    } else if (key == 'u') {
+    } else if (key == 'U') {
       // up to CL
       M_upToChangelist();
-    } else if (key == 'i') {
+    } else if (key == 'I') {
       // toggle intra line diff
       if (intraLineDiff) intraLineDiff.toggle();
-    } else if (key == 's') {
+    } else if (key == 'S') {
       // toggle show/hide inline comments
       M_toggleAllInlineComments();
-    } else if (key == 'e') {
+    } else if (key == 'E') {
       M_expandAllInlineComments();
-    } else if (key == 'c') {
+    } else if (key == 'C') {
       M_collapseAllInlineComments();
-    } else if (key == '\r' || key == '\n') {
+    } else if (key == 'Enter') {
       // respond to current comment
       if (hookState) hookState.respond();
     } else {
       return true;
     }
     return false;
-  }, M_commentTextKeyPress_);
+  }, M_commentTextKeyDown_);
 }
 
 /**
- * Event handler for the keypress event in the changelist view.
+ * Event handler for the keydown event in the changelist (issue) view.
  * @param {Event} evt The event object that triggered this callback
- * @return false if the key press was handled
+ * @return false if the event was handled
  */
-function M_changelistKeyPress(evt) {
-  return M_keyPressCommon(evt, function(key) {
-    if (key == 'o' || key == '\r' || key == '\n') {
+function M_changelistKeyDown(evt) {
+  return M_keyDownCommon(evt, function(key) {
+    if (key == 'O' || key == 'Enter') {
       if (dashboardState) {
 	var child = dashboardState.curTR.cells[3].firstChild;
 	while (child && child.nextSibling && child.nodeName != "A") {
@@ -2126,7 +2236,7 @@ function M_changelistKeyPress(evt) {
 	  location.href = child.href;
 	}
       }
-    } else if (key == 'i') {
+    } else if (key == 'I') {
       if (dashboardState) {
 	var child = dashboardState.curTR.cells[2].firstChild;
 	while (child && child.nextSibling &&
@@ -2137,15 +2247,15 @@ function M_changelistKeyPress(evt) {
 	  location.href = child.href;
 	}
       }
-    } else if (key == 'k') {
+    } else if (key == 'K') {
       if (dashboardState) dashboardState.gotoPrev();
-    } else if (key == 'j') {
+    } else if (key == 'J') {
       if (dashboardState) dashboardState.gotoNext();
-    } else if (key == 'm') {
+    } else if (key == 'M') {
       document.location.href = publish_link;
-    } else if (key == 'u') {
+    } else if (key == 'U') {
       // back to dashboard
-      document.location.href = '/';
+      document.location.href = base_url;
     } else {
       return true;
     }
@@ -2192,7 +2302,7 @@ function M_getBugbotComments(cl, depot_path, a, b) {
       }
     }
   }
-  httpreq.open("GET", "/warnings/" + cl + "/" + depot_path +
+  httpreq.open("GET", base_url + "warnings/" + cl + "/" + depot_path +
                "?a=" + a + "&b=" + b, true);
   httpreq.send(null);
 }
@@ -2377,7 +2487,7 @@ function M_restoreDraftText_(draftKey, form, opt_selectAll) {
 
 /**
  * M_DashboardState class. Keeps track of the current position of
- * the selector on the dashboard, and moves it on keypress.
+ * the selector on the dashboard, and moves it on keydown.
  * @param {Window} win The window that the dashboard table is in.
  * @param {String} trName The name of TRs that we will move between.
  * @param {String} cookieName The cookie name to store the marker position into.
@@ -2507,16 +2617,16 @@ M_DashboardState.prototype.gotoNext = function() {
 }
 
 /**
- * Event handler for dashboard key presses. Dispatches cursor moves, as well as
+ * Event handler for dashboard hot keys. Dispatches cursor moves, as well as
  * opening CLs.
  */
-function M_dashboardKeyPress(evt) {
-  return M_keyPressCommon(evt, function(key) {
-    if (key == 'k') {
+function M_dashboardKeyDown(evt) {
+  return M_keyDownCommon(evt, function(key) {
+    if (key == 'K') {
       if (dashboardState) dashboardState.gotoPrev();
-    } else if (key == 'j') {
+    } else if (key == 'J') {
       if (dashboardState) dashboardState.gotoNext();
-    } else if (key == '#') {
+    } else if (key == 'Shift-3' /* '#' */) {
       if (dashboardState) {
 	var child = dashboardState.curTR.cells[1].firstChild;
 	while (child && child.className != "issue-close") {
@@ -2532,7 +2642,7 @@ function M_dashboardKeyPress(evt) {
 	  location.href = child.href;
 	}
       }
-    } else if (key == 'o' || key == '\r' || key == '\n') {
+    } else if (key == 'O' || key == 'Enter') {
       if (dashboardState) {
 	var child = dashboardState.curTR.cells[2].firstChild;
 	while (child && child.nodeName != "A") {
@@ -2549,12 +2659,36 @@ function M_dashboardKeyPress(evt) {
   });
 }
 
+/**
+ * Helper to fill a table cell element.
+ * @param {Array} attrs An array of attributes to be applied
+ * @param {String} text The content of the table cell
+ * @return {Element}
+ */
+function M_fillTableCell_(attrs, text) {
+  var td = document.createElement("td");
+  for (var j=0; j<attrs.length; j++) {
+    if (attrs[j][0] == "class" && M_isIE()) {
+      td.setAttribute("className", attrs[j][1]);
+    } else {
+      td.setAttribute(attrs[j][0], attrs[j][1]);
+    }
+  }
+  if (!text) text = "";
+  if (M_isIE()) {
+    td.innerText = text;
+  } else {
+    td.textContent = text;
+  }
+  return td;
+}
+
 /*
  * Function to request more context between diff chunks.
  * See _ShortenBuffer() in codereview/engine.py.
  */
 function M_expandSkipped(id_before, id_after, where, id_skip) {
-  links = document.getElementById('skiplinks-'+id_skip).childNodes;
+  links = document.getElementById('skiplinks-'+id_skip).getElementsByTagName('a');
   for (var i=0; i<links.length; i++) {
 	links[i].href = '#skiplinks-'+id_skip;
   }
@@ -2583,7 +2717,11 @@ function M_expandSkipped(id_before, id_after, where, id_skip) {
           var data = response[i];
           var row = document.createElement("tr");
           for (var j=0; j<data[0].length; j++) {
-            row.setAttribute(data[0][j][0], data[0][j][1]);
+            if (data[0][j][0] == "class" && M_isIE()) {
+              row.setAttribute("className", data[0][j][1]);
+            } else {
+              row.setAttribute(data[0][j][0], data[0][j][1]);
+            }
           }
           if ( where == 't' || where == 'a') {
             tr.parentNode.insertBefore(row, tr);
@@ -2594,7 +2732,10 @@ function M_expandSkipped(id_before, id_after, where, id_skip) {
 	      tr.parentNode.insertBefore(row, tr.nextSibling);
 	    }
           }
-          row.innerHTML = data[1];
+          var left = M_fillTableCell_(data[1][0][0], data[1][0][1]);
+          var right = M_fillTableCell_(data[1][1][0], data[1][1][1]);
+          row.appendChild(left);
+          row.appendChild(right);
 	  last_row = row;
         }
         var curr = document.getElementById('skipcount-'+id_skip);
@@ -2618,7 +2759,7 @@ function M_expandSkipped(id_before, id_after, where, id_skip) {
 	  html += '<a href="javascript:M_expandSkipped('+new_before;
 	  html += ','+new_after+',\'a\','+id_skip+');">Expand all</a>';
           if ( new_count > 3*context ) {
-	    var val = parseInt(new_after)+1;
+	    var val = parseInt(new_after);
             html += ' | <a href="javascript:M_expandSkipped('+new_before;
             html += ','+val+',\'b\','+id_skip+');">';
 	    html += 'Expand '+context+' after';
@@ -2733,7 +2874,7 @@ function M_showUserInfoPopup(obj) {
       }
     }
   }
-  httpreq.open("GET", "/user_popup/" + user_key, true);
+  httpreq.open("GET", base_url + "user_popup/" + user_key, true);
   httpreq.send(null);
   obj.onmouseout = function() {
     aborted = true;
@@ -2763,14 +2904,18 @@ function M_showPopUp(obj, id) {
  * @param {Integer} issue The issue id.
  * @param {Integer} patchset The patchset id.
  * @param {Boolean} unified If True show unified diff else s-b-s view.
+ * @param {String} opt_part The type of diff to jump to -- diff/diff2/patch
  */
-function M_jumpToPatch(select, issue, patchset, unified) {
-  if (unified) {
-    part = 'patch';
-  } else {
-    part = 'diff';
+function M_jumpToPatch(select, issue, patchset, unified, opt_part) {
+  var part = opt_part;
+  if (!part) {
+    if (unified) {
+      part = 'patch';
+    } else {
+      part = 'diff';
+    }
   }
-  var url = '/'+issue+'/'+part+'/'+patchset+'/'+select.value;
+  var url = base_url+issue+'/'+part+'/'+patchset+'/'+select.value;
   var context = document.getElementById('id_context');
   var colwidth = document.getElementById('id_column_width');
   if (context && colwidth) {
@@ -2797,7 +2942,7 @@ function M_setIssueStar_(id, url) {
       }
     }
   }
-  httpreq.open("POST", "/" + id + url, true);
+  httpreq.open("POST", base_url + id + url, true);
   httpreq.send("xsrf_token=" + xsrfToken);
 }
 
@@ -2836,7 +2981,7 @@ function M_closeIssue(id) {
       }
     }
   }
-  httpreq.open("POST", "/" + id + "/close", true);
+  httpreq.open("POST", base_url + id + "/close", true);
   httpreq.send("xsrf_token=" + xsrfToken);
 }
 
@@ -2870,7 +3015,7 @@ function M_draftMessage(issue_id, headless) {
 
 /**
  * Constructor.
- * Sets keypress callback and loads draft message if any.
+ * Sets keydown callback and loads draft message if any.
  */
 M_draftMessage.prototype.initialize = function() {
   this.load();
@@ -2935,12 +3080,14 @@ M_draftMessage.prototype.dialog_save = function() {
  * @param {String} msg The message to display.
  */
 M_draftMessage.prototype.set_status = function(msg) {
-  status = document.getElementById(this.id_status);
-  if (status) {
-    status.innerHTML = msg;
-    this.status_timeout = setTimeout(function() {
-      draftMessage.set_status('');
-      }, 3000);
+  var statusSpan = document.getElementById(this.id_status);
+  if (statusSpan) {
+    statusSpan.innerHTML = msg;
+    if (msg) {
+      this.status_timeout = setTimeout(function() {
+        draftMessage.set_status('');
+        }, 3000);
+    }
   }
 }
 
@@ -2967,7 +3114,7 @@ M_draftMessage.prototype.save = function(cb) {
       cb(httpreq);
     }
   }
-  httpreq.open("POST", "/" + this.issue_id + "/draft_message", true);
+  httpreq.open("POST", base_url + this.issue_id + "/draft_message", true);
   httpreq.send("reviewmsg="+encodeURIComponent(text));
 }
 
@@ -2999,7 +3146,7 @@ M_draftMessage.prototype.load = function() {
 	elem.focus();
       }
     }
-    httpreq.open("GET", "/" + this.issue_id + "/draft_message", true);
+    httpreq.open("GET", base_url + this.issue_id + "/draft_message", true);
     httpreq.send("");
   }
 }
@@ -3024,7 +3171,7 @@ M_draftMessage.prototype.discard = function(cb) {
       cb(httpreq);
     }
   }
-  httpreq.open("DELETE", "/" + this.issue_id + "/draft_message", true);
+  httpreq.open("DELETE", base_url + this.issue_id + "/draft_message", true);
   httpreq.send("");
 }
 

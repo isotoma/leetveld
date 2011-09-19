@@ -1,17 +1,16 @@
 # Django settings for django_gae2django project.
 
+# NOTE: Keep the settings.py in examples directories in sync with this one!
+
 import os
 
-import leetveld
 import gae2django
 gae2django.install()
 
-APP_VERSION = open(os.path.join(os.path.dirname(__file__), 'version.txt')).read()
-
-# NOTE: Keep the settings.py in examples directories in sync with this one!
-
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+PROJECT_DIR = os.path.dirname(__file__)
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -19,16 +18,12 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(os.path.dirname(__file__), 'codereview.db'),
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
-    }
-}
+DATABASE_ENGINE = 'sqlite3'    # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+DATABASE_NAME = 'dev.db'       # Or path to database file if using sqlite3.
+DATABASE_USER = ''             # Not used with sqlite3.
+DATABASE_PASSWORD = ''         # Not used with sqlite3.
+DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
+DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -49,12 +44,12 @@ USE_I18N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = os.path.join(os.path.dirname(__file__), 'static')
+MEDIA_ROOT = os.path.join(PROJECT_DIR, 'static')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/static/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -64,8 +59,6 @@ ADMIN_MEDIA_PREFIX = '/media/'
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'el@4s$*(idwm5-87teftxlksckmy8$tyo7(tm!n-5x)zeuheex'
 
-CACHE_BACKEND = 'memcached://127.0.0.1:11211/'
-
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
@@ -73,19 +66,24 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.load_template_source',
 )
 
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'gae2django.middleware.FixRequestUserMiddleware',
+    # Keep in mind, that CSRF protection is DISABLED in this example!
+    'rietveld_helper.middleware.DisableCSRFMiddleware',
     'rietveld_helper.middleware.AddUserToRequestMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'leetveld.middleware.AddAppVersionToRequestMiddleware',
+)
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.auth',    # required by admin panel
+    'django.core.context_processors.request',
 )
 
 ROOT_URLCONF = 'rietveld_helper.urls'
-
-INTERNAL_IPS = ('127.0.0.1',)
 
 TEMPLATE_DIRS = (
     os.path.join(os.path.dirname(__file__), 'templates'),
@@ -99,59 +97,15 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'gae2django',
     'rietveld_helper',
-    'leetveld',
+    'codereview',
 )
 
-AUTH_PROFILE_MODULE = 'leetveld.Account'
+AUTH_PROFILE_MODULE = 'codereview.Account'
 LOGIN_REDIRECT_URL = '/'
 
 # This won't work with gae2django.
 RIETVELD_INCOMING_MAIL_ADDRESS = None
 
-# Uncomment the following to lines to run unittests with coverage reports.
-#TEST_RUNNER = 'gae2django.tests.test_runner_with_coverage'
-#COVERAGE_HTML_DIR = 'coverage_report'
+RIETVELD_REVISION = '6bbee3d7523b'
 
-LOG_FILE = os.path.join(os.path.abspath(os.path.dirname(leetveld.__file__)), 'logs/leetveld.log')
-
-LOGGING = {
-    'version': 1,
-    'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(message)s',
-        },
-        'simple': {
-            'format': '%(levelname)s %(message)s',
-        },
-    },
-    'handlers': {
-        'log_file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.WatchedFileHandler',
-            'filename': LOG_FILE,
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers':['console'],
-            'propagate': True,
-            'level':'INFO',
-        },
-        'django.request': {
-            'handlers': ['log_file', 'console'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-        'leetveld': {
-            'handlers': ['log_file'],
-            'level': 'INFO',
-            'propagate': True,
-        }
-    }
-}
+UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')

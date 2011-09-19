@@ -2,15 +2,11 @@
 
 {%block body%}
 <h1>Tired of uploading files through the form?</h1>
-<p>Download <a href="/static/upload.py">upload.py</a>, a simple tool for
+<p>Download <a href="{%url codereview.views.customized_upload_py%}">upload.py</a>, a simple tool for
 uploading diffs from a version control system to the codereview app.</p>
 
-<p><strong>If you're using linux, copying this file to to bin/ will make life easier:</p>
-<pre>sudo cp upload.py /usr/local/bin/leetveld
-sudo chmod +x /usr/local/bin/leetveld</pre>
-
-<p><strong>Usage summary:</strong></p>
-<pre>upload.py [options] [-- diff_options]</pre>
+<p><strong>Usage summary:</strong>
+<pre>upload.py [options] [-- diff_options]</pre></p>
 
 <p>Diff options are passed to the diff command of the underlying system.</p>
 
@@ -25,7 +21,7 @@ sudo chmod +x /usr/local/bin/leetveld</pre>
       target="_blank">Read more</a> about this script.</p>
 
 <div style="margin-top: 1.5em;">
-<form method="POST" action="/use_uploadpy">
+<form method="POST" action="{%url codereview.views.use_uploadpy%}">
   <p>
   <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
   <input name="disable_msg" value="1" id="disable_msg" type="checkbox" />

@@ -2,10 +2,7 @@
 {%block body%}
 
 <script language="JavaScript" type="text/javascript"><!--
-function keyPressIntermediary(evt) {
-  return M_keyPress(evt);
-}
-document.onkeypress = keyPressIntermediary;
+document.onkeydown = M_keyDown;
 {%if user%}
 logged_in = true;
 {%else%}
@@ -18,8 +15,8 @@ login_warned = false;
 {%if user%}
 <!-- Form used by in-line comment JS; XXX filled in by JS code -->
 <form id="dainlineform" style="display: none;"
-      action="{%url leetveld.views.inline_draft%}" method="post">
-  <div class="comment-border" name="form-container">
+      action="{%url codereview.views.inline_draft%}" method="post">
+  <div class="comment-border">
     <input type="hidden" name="snapshot" value="XXX">
     <input type="hidden" name="lineno" value="XXX">
     <input type="hidden" name="side" value="XXX">
@@ -34,25 +31,49 @@ login_warned = false;
   </div>
   <div class="comment-border" style="padding: 0pt;"></div>
 </form>
-<a id="resizer" style="display:none;cursor:pointer"><img src="/static/zippyplus.gif"></a>
+<a id="resizer" style="display:none;cursor:pointer"><img src="{{media_url}}zippyplus.gif"></a>
 {%endif%}
 
 <div style="float: left;">
   <h2 style="margin-bottom: 0em; margin-top: 0em;">Side by Side Diff: {{patch.filename}}</h2>
   <div style="margin-top: .2em;">{%include "issue_star.html"%}
-    <b>Issue <a href="{%url leetveld.views.show issue.key.id%}" onmouseover="M_showPopUp(this, 'popup-issue');" id="upCL">{{issue.key.id}}</a>:</b>
+    <b>Issue <a href="{%url codereview.views.show issue.key.id%}" onmouseover="M_showPopUp(this, 'popup-issue');" id="upCL">{{issue.key.id}}</a>:</b>
   {{issue.subject}} {%if issue.closed %} (Closed) {%endif%}
-  {%if issue.base%}<span class="extra">SVN Base: {{issue.base}}</span>{%endif%}</div>
+  {%if issue.base%}<span class="extra">Base URL: {{issue.base}}</span>{%endif%}</div>
   <div style="margin-top: .4em;">
     <b>Patch Set: {%if patchset.message%}{{patchset.message}}{%endif%}</b>
     <span class="extra">
     Created {{patchset.created|timesince}} ago
-    {%ifnotequal patchset.owner issue.owner%}
-    by <b>{{patchset.owner|show_user}}</b>{%endifnotequal%}
     {%if patchset.url%},
     Downloaded from: <a href="{{patchset.url}}">{{patchset.url}}</a>
     {%endif%}
     </span>
+  </div>
+  <div style="margin-top: .4em">
+    <table>
+      <tr>
+        <td>Left:</td>
+        <td>
+          <select name="left" id="left">
+            <option value="-1">Base</option>
+            {%for p in patchsets%}
+            <option value="{{p.key.id}}">Patch Set {{forloop.counter}}: {{p.message}}</option>
+            {%endfor%}
+          </select>
+        </td>
+        <td rowspan="2"><input type="button" value="Go" onclick="M_navigateDiff({{issue.key.id}}, '{{patch.filename}}')"></td>
+      </tr>
+      <tr>
+        <td>Right:</td>
+        <td>
+          <select name="right" id="right">
+            {%for p in patchsets%}
+            <option value="{{p.key.id}}" {%ifequal patchset.key.id p.key.id%}selected="selected"{%endifequal%}>Patch Set {{forloop.counter}}: {{p.message}}</option>
+            {%endfor%}
+          </select>
+        </td>
+      </tr>
+    </table>
   </div>
   <div style="margin-top: .4em;" class="help">
     Use n/p to move between diff chunks;
@@ -60,7 +81,7 @@ login_warned = false;
     {%if user%}
     Double-click a line to add a draft in-line comment.
     <br><span style="color:red">Draft comments are only viewable by you;</span>
-    use <a href="{%url leetveld.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
+    use <a href="{%url codereview.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
     {%else%}
     Please Sign in to add in-line comments.
     {%endif%}
@@ -71,23 +92,25 @@ login_warned = false;
   <div style="margin-top: 5px;">
     Jump to: <select onchange="M_jumpToPatch(this, {{issue.key.id}}, {{patchset.key.id}});">
       {% for jump_patch in patchset.patches %}
-        <option value="{{jump_patch.key.id}}"
+        <option value="{{jump_patch.filename}}"
          {%ifequal jump_patch.key.id patch.key.id%} selected="selected"{%endifequal%}>{{jump_patch.filename}}</option>
       {% endfor %}
     </select>
   </div>
+  {%if patch%}
   <div style="margin-top: 5px;">
-    <a href="{%url leetveld.views.patch issue.key.id,patchset.key.id,patch.key.id%}{%urlappend_view_settings%}">
+    <a href="{%url codereview.views.patch issue.key.id,patchset.key.id,patch.key.id%}{%urlappend_view_settings%}">
     View unified diff</a>
     |
-    <a href="{%url leetveld.views.download_patch issue.key.id,patchset.key.id,patch.key.id%}"
+    <a href="{%url codereview.views.download_patch issue.key.id,patchset.key.id,patch.key.id%}"
        title="Download patch for {{patch.filename}}">
       Download patch
     </a>
   </div>
+  {%endif%}
   {%if user%}
   <div style="margin-top: 5px;">
-    <a class="novisit" href="{%url leetveld.views.publish issue.key.id%}">Publish+Mail
+    <a class="novisit" href="{%url codereview.views.publish issue.key.id%}">Publish+Mail
     Comments</a> ('m')
     |
     <a class="novisit" href="javascript:draftMessage.dialog_show()">Edit draft message</a> ('M')
@@ -114,16 +137,18 @@ login_warned = false;
 {%endif%}
 
 <table border="0" cellpadding="0" cellspacing="0" id="thecode"
-       ondblclick="M_handleTableDblClick(event)" width="100%">
+       ondblclick="M_handleTableDblClick(event)" width="100%"
+       ontouchstart="M_handleTableTouchStart(event)"
+       ontouchend="M_handleTableTouchEnd(event)">
 <tr><th>OLD</th><th>NEW</th></tr>
 
 {%if patch.is_binary %}
 <tr>
 <td style="width:50%" align="center">
-  <img src="{%url leetveld.views.image issue.key.id,patchset.key.id,patch.key.id,0%}" />
+  <img src="{%url codereview.views.image issue.key.id,patchset.key.id,patch.key.id,0%}" />
 </td>
 <td style="width:50%" align="center">
-  <img src="{%url leetveld.views.image issue.key.id,patchset.key.id,patch.key.id,1%}" />
+  <img src="{%url codereview.views.image issue.key.id,patchset.key.id,patch.key.id,1%}" />
 </td>
 </tr>
 {%else%}
@@ -135,10 +160,9 @@ login_warned = false;
 </table>
 
 </div>
-{%include "diff_navigation.html"%}
+<div class="codenav">{%include "file_navigation.html"%}</div>
 </div>
 
-</script>
 <script language="JavaScript" type="text/javascript"><!--
 var old_snapshot = "old";
 var new_snapshot = "new";
@@ -146,8 +170,7 @@ var intraLineDiff = new M_IntraLineDiff();
 var hookState = new M_HookState(window);
 hookState.updateHooks();
 
-var skipped_lines_url = ('/' + {{issue.key.id}} + '/diff_skipped_lines/' +
-                         {{patchset.key.id}} + '/' + {{patch.key.id}} + '/')
+var skipped_lines_url = ('{%url diff_skipped_lines_prefix issue.key.id,patchset.key.id,patch.key.id%}');
 ;
 
 // -->

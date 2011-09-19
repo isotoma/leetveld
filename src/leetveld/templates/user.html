@@ -1,25 +1,34 @@
 {%extends "issue_base.html"%}
-{%block title1%}Issues for {{email|nickname}} -{%endblock%}
+{%block title1%}Issues for {%nickname email%} -{%endblock%}
 {%block body%}
 <script language="JavaScript" type="text/javascript"><!--
-function keyPressIntermediary(evt) {
-  return M_dashboardKeyPress(evt);
-}
-document.onkeypress = keyPressIntermediary;
+document.onkeydown = M_dashboardKeyDown;
 -->
 </script>
-<h2>Issues for {{email|nickname}}</h2>
+<h2>Issues for {%nickname email%}</h2>
 <div class="issue-list">
   <table id="queues">
-  
+
+  {%if draft_issues%}
   <tr>
-    <td colspan="10" class="header">
-      <h3>Issues Created by {{email|nickname}} ({{my_issues|length}})</h3>
+    <td colspan="9" class="header">
+      <h3>Issues with drafts by me</h3>
+    </td>
+  </tr>
+  {%include "issue_heading.html"%}
+  {%for issue in draft_issues%}
+    {%include "issue_row.html"%}
+  {%endfor%}
+  {%endif%}
+
+  <tr>
+    <td colspan="9" class="header">
+      <h3>Created by {%nickname email%} ({{my_issues|length}})</h3>
     </td>
   </tr>
   {%if not my_issues%}
     <tr>
-      <td colspan="10" class="first last">
+      <td colspan="9" class="first last">
         <span class="disabled">(None)</span>
       </td>
     </tr>
@@ -31,13 +40,13 @@ document.onkeypress = keyPressIntermediary;
   {%endif%}
 
   <tr>
-    <td colspan="10" class="header">
-      <h3>Issues Reviewable by {{email|nickname}} ({{review_issues|length}})</h3>
+    <td colspan="9" class="header">
+      <h3>Reviewable by {%nickname email%} ({{review_issues|length}})</h3>
     </td>
   </tr>
   {%if not review_issues%}
     <tr>
-      <td colspan="10" class="first last">
+      <td colspan="9" class="first last">
         <span class="disabled">(None)</span>
       </td>
     </tr>
@@ -48,15 +57,32 @@ document.onkeypress = keyPressIntermediary;
     {%endfor%}
   {%endif%}
 
+  <tr>
+    <td colspan="9" class="header">
+      <h3>Issues CCd to {%nickname email%} ({{cc_issues|length}})</h3>
+    </td>
+  </tr>
+  {%if not cc_issues%}
+    <tr>
+      <td colspan="9" class="first last">
+        <span class="disabled">(None)</span>
+      </td>
+    </tr>
+  {%else%}
+    {%include "issue_heading.html"%}
+    {%for issue in cc_issues%}
+      {%include "issue_row.html"%}
+    {%endfor%}
+  {%endif%}
 
   <tr>
-    <td colspan="10" class="header">
-      <h3>Issues Closed Recently ({{closed_issues|length}})</h3>
+    <td colspan="9" class="header">
+      <h3>Closed Recently ({{closed_issues|length}})</h3>
     </td>
   </tr>
   {%if not closed_issues%}
     <tr>
-      <td colspan="10" class="first last">
+      <td colspan="9" class="first last">
         <span class="disabled">(None)</span>
       </td>
     </tr>

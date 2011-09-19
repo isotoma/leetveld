@@ -14,28 +14,32 @@
     {%endblock%}
     Code Review
   </title>
-  <link rel="icon" href="/favicon.ico" />
-  <link type="text/css" rel="stylesheet" href="/static/styles.css" />
-  <script type="text/javascript" src="/static/script.js"></script>
+  <link rel="icon" href="{{media_url}}favicon.ico" />
+  <link type="text/css" rel="stylesheet" href="{{media_url}}styles.css" />
+  <script type="text/javascript" src="{{media_url}}script.js"></script>
   <link rel="alternate" type="application/atom+xml"
    	title="Recent Issues"
-   	href="/rss/all" />
+   	href="{%url django.contrib.syndication.views.feed url="all"%}" />
    {%if user%}
      <link rel="alternate" type="application/atom+xml"
    	  title="Issues created by me"
-   	  href="/rss/mine/{{user|nickname:"x"}}" />
+   	  href="{%url django.contrib.syndication.views.feed url="mine"%}/{%nickname user True%}" />
      <link rel="alternate" type="application/atom+xml"
    	  title="Issues reviewable by me" 
-   	  href="/rss/reviews/{{user|nickname:"x"}}" />
+   	  href="{%url django.contrib.syndication.views.feed url="reviews"%}/{%nickname user True%}" />
      <link rel="alternate" type="application/atom+xml"
    	  title="Issues closed by me"
-   	  href="/rss/closed/{{user|nickname:"x"}}" />
+   	  href="{%url django.contrib.syndication.views.feed url="closed"%}/{%nickname user True%}" />
    {%endif%}
    {%if issue%}
      <link rel="alternate" type="application/atom+xml"
  	    title="Issue {{issue.key.id}}"
- 	    href="/rss/issue/{{issue.key.id}}" />
-   {%endif%} 
+ 	    href="{%url django.contrib.syndication.views.feed url="issue"%}/{{issue.key.id}}" />
+   {%endif%}
+
+   <!-- head block to insert js/css for forms processing -->
+   {%block head%}{%endblock%}
+   <!-- /head -->
 </head>
 <body onunload="M_unloadPage();">
 
@@ -44,8 +48,10 @@
 var xsrfToken = '{{xsrf_token}}';
 var helpDisplayed = false;
 document.onclick = M_clickCommon;
+var media_url = "{{media_url}}";
+var base_url = "{%url codereview.views.index%}";
 {%if issue%}
-var publish_link = "{%url leetveld.views.publish issue.key.id%}";
+var publish_link = "{%url codereview.views.publish issue.key.id%}";
 {%endif%}
 // -->
 </script>
@@ -72,6 +78,9 @@ var publish_link = "{%url leetveld.views.publish issue.key.id%}";
 	</tr>
         <tr>
           <td class="shortcut"><span class="letter">j</span> / <span class="letter">k</span> <b>:</b></td><td>jump to file after / before current file</td>
+        </tr>
+        <tr>
+          <td class="shortcut"><span class="letter">J</span> / <span class="letter">K</span> <b>:</b></td><td>jump to next file with a comment after / before current file</td>
         </tr>
         <tr>
           <td></td><th>Side-by-side diff</th>
@@ -153,18 +162,36 @@ var publish_link = "{%url leetveld.views.publish issue.key.id%}";
 {%if is_dev%}
 <div style="float:left; color:green; font-weight:bold">DEVELOPMENT SERVER</div>
 {%else%}
-<div style="float:left; font-weight:bold"><i>Leetveld</i> version {{ request.app_version }}</div>
+<div style="float:left; font-weight:bold"><i>Rietveld</i> Code Review Tool</div>
 {%endif%}
 {%if user%}
-<b>{{user.email}} ({{user|nickname:"x"}})</b>
+<b>{{user.email}} ({%nickname user True%})</b>
 |
-<a class="novisit" href="{%url leetveld.views.settings%}">Settings</a>
+{%if must_choose_nickname%}
+<span style="color:red">Please choose your nickname with</span>{%endif%}
+<a class="novisit" href="{%url codereview.views.settings%}">Settings</a>
 |
 {%endif%}
-{%if is_dev%}
+{%if is_dev or user.is_superuser%}
 <a class="novisit" target="_blank" href="/_ah/admin">Admin</a>
 |
 {%endif%}
+{%if user%}
+<a class="novisit" target="_blank" href="/admin/password_change">Change password</a>
+|
+{%endif%}
+<a class="novisit" target="_blank"
+   href="http://code.google.com/p/rietveld/wiki/CodeReviewHelp">Help</a>
+|
+<a class="novisit" target="_blank"
+   href="http://code.google.com/p/rietveld/issues/list">Bug tracker</a>
+|
+<a class="novisit" target="_blank"
+   href="http://groups.google.com/group/codereview-discuss">Discussion group</a>
+|
+<a class="novisit" target="_blank"
+   href="http://code.google.com/p/rietveld">Source code</a>
+|
 {%if user%}
 <a class="novisit" href="{{sign_out}}">Sign out</a>
 {% else %}
@@ -175,8 +202,9 @@ var publish_link = "{%url leetveld.views.publish issue.key.id%}";
 <div class="counter">({{counter}})</div>
 <div class="mainmenu">
   {%block mainmenu%}
-  <a href="{%url leetveld.views.index%}">Issues</a>
-  <a href="{%url leetveld.views.repos %}">Repositories</a>
+  <a href="{%url codereview.views.index %}">Issues</a>
+  <a href="{%url codereview.views.repos %}">Repositories</a>
+  <a href="{%url codereview.views.search%}">Search</a>
   {%endblock%}
 </div>
 <div class="mainmenu2">
@@ -188,30 +216,35 @@ var publish_link = "{%url leetveld.views.publish issue.key.id%}";
 </div>
 {%block popup%}{%endblock%}
 
-<p />
-
+<p></p>
+<div style="float: left;">
+  <a target="_blank" href="http://code.google.com/appengine/"><img border="0"
+   src="{{media_url}}appengine-noborder-120x30.gif"
+   alt="Powered by Google App Engine" /></a>
+</div>
 
 <div class="extra" style="font-size: 9pt; float: right; text-align: right;">
   <div style="height:14px;">
-  <img src="/static/rss.gif" alt="RSS Feeds" width="14" height="14"
+  <img src="{{media_url}}rss.gif" alt="RSS Feeds" width="14" height="14"
        align="top" />
-  <a href="/rss/all">Recent Issues</a>
+  <a href="{%url django.contrib.syndication.views.feed url="all"%}">Recent Issues</a>
   {%if user%}
   |
-  <a href="/rss/mine/{{user|nickname:"x"}}">My Issues</a>
+  <a href="{%url django.contrib.syndication.views.feed url="mine"%}/{%nickname user True%}">My Issues</a>
   |
-  <a href="/rss/reviews/{{user|nickname:"x"}}">My Reviews</a>
+  <a href="{%url django.contrib.syndication.views.feed url="reviews"%}/{%nickname user True%}">My Reviews</a>
   |
-  <a href="/rss/closed/{{user|nickname:"x"}}">My Closed</a>
+  <a href="{%url django.contrib.syndication.views.feed url="closed"%}/{%nickname user True%}">My Closed</a>
   {%endif%}
   {%if issue%}
   |
-  <a href="/rss/issue/{{issue.key.id}}">This issue</a>
+  <a href="{%url django.contrib.syndication.views.feed url="issue"%}/{{issue.key.id}}">This issue</a>
   {%endif%} 
   </div>
-  <div style="margin-top: .3em;">{%include "live_revision.html"%}</div>
+  <div style="margin-top: .3em;">This is Rietveld <a href='http://code.google.com/p/rietveld/updates/list'>{{rietveld_revision}}</a></div>
 </div>
 
+{%if not is_dev%}
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
@@ -221,5 +254,7 @@ var pageTracker = _gat._getTracker("UA-4803694-4");
 pageTracker._initData();
 pageTracker._trackPageview();
 </script>
+{%endif%}
+
 </body>
 </html>

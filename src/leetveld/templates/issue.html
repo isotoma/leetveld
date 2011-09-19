@@ -1,5 +1,6 @@
 {%extends "issue_base.html"%}
 
+{%block head%}{{form.media}}{%endblock%}
 {%block issue_body%}
 {%if issue.draft_count or has_draft_message%}
   <div class="error">
@@ -9,7 +10,7 @@
     message{%endif%}.
     Drafts are not viewable by others;
     use <a class="novisit"
-	   href="{%url leetveld.views.publish issue.key.id%}">
+	   href="{%url codereview.views.publish issue.key.id%}">
     Publish+Mail Comments</a> ('m') to let others view them.
   </div>
 {%endif%}
@@ -69,7 +70,7 @@
     </h3>
 
     <form id="add" style="{%if not form.errors%}display:none{%endif%}"
-          action="{%url leetveld.views.add issue.key.id%}" method="post"
+          action="{%url codereview.views.add issue.key.id%}" method="post"
           enctype="multipart/form-data">
       <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
       <table>
@@ -108,33 +109,34 @@
     </div>
 
     {%for message in messages%}
-      <div class="message" id="msg-{{message.key}}"
-	   name="{{forloop.counter0}}">
-	<a name="msg-{{message.key}}"></a>
+      <div class="message {%if message.approval%}approval{%endif%}"
+           id="msg{{forloop.counter}}"
+           name="{{forloop.counter0}}">
         <div class="header">
           <table border="0" width="100%" cellspacing="0" cellpadding="0">
             <tr class="comment_title"
                 onclick="M_switchChangelistComment({{forloop.counter0}})">
               <td style="padding-left: 5px; white-space: nowrap;">
-                <b>{{message.sender|nickname}}</b>
+                <b>{%nickname message.sender%}</b>
               </td>
-              <td width="100%">
+              <td width="100%" style="overflow:hidden;">
                 <table style="table-layout:fixed; white-space: nowrap;"
                        width="100%">
                   <tr>
                     <td>
-                      <div style="white-space: nowrap; overflow: hidden;{%if forloop.last%} visibility: hidden;{%endif%}"
+                      <span style="white-space: nowrap; overflow: hidden;{%if forloop.last%} display: none;{%endif%}"
                            class="extra"
                            id="cl-preview-{{forloop.counter0}}">
                           {{message.text|truncatewords:15}}
-                       </div>
+                      </span>
                     </td>
                   </tr>
                 </table>
               </td>
               <td align="right"
-                  style="white-space: nowrap; padding-right: 5px;">
+                  style="white-space: nowrap; padding-right: 5px; padding-left: 3px;">
                 {{message.date|timesince}} ago
+                <a href="#msg{{forloop.counter}}">#{{forloop.counter}}</a>
               </td>
             </tr>
           </table>
@@ -148,8 +150,9 @@
           </div>
           <div class="message-actions">
             {%if user%}
-              <a href="javascript:M_replyToMessage('{{forloop.counter0}}', '{{message.date|date:"Y/m/d H:i:s"}}', '{{message.sender|nickname:"x"}}')"
+              <a href="javascript:M_replyToMessage('{{forloop.counter0}}', '{{message.date|date:"Y/m/d H:i:s"}}', '{%nickname message.sender True%}')"
                  id="message-reply-href-{{forloop.counter0}}">Reply</a>
+              <textarea rows="7" cols="70" name="message" style="display:none"></textarea>
               <div id="message-reply-{{forloop.counter0}}"
                    style="display:none;"></div>
             {%else%}
@@ -160,14 +163,13 @@
 
       </div>
     {%endfor%}
-    
-    
+
     <div>
       <a href="javascript:M_showAllComments('cl', {{messages|length}})">
       Expand All Messages</a>
       |
       <a href="javascript:M_hideAllComments('cl', {{messages|length}})">
-      Collapse All Messages</a>
+        Collapse All Messages</a>
     </div>
 
   </div>
@@ -176,21 +178,19 @@
 
 <script language="JavaScript" type="text/javascript">
   <!--
-    document.onkeypress = function(evt) { return M_changelistKeyPress(evt); }
+    document.onkeydown = M_changelistKeyDown;
     var dashboardState = new M_DashboardState(window, 'patch', 'M_CLPatchMarker');
-    M_switchChangelistCommentByAnchor();
+    M_toggleIssueMessageByAnchor();
   // -->
 </script>
 
 
 {%if user%}
   <div style="display:none;">
-    <form method="POST" action="{%url leetveld.views.publish issue.key.id%}"
+    <form method="POST" action="{%url codereview.views.publish issue.key.id%}"
           id="message-reply-form">
       <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
-      <div>
-        <textarea rows="7" cols="70" name="message"></textarea>
-      </div>
+      <div></div>
       <input type="hidden" name="subject" value="{{issue.subject}}" />
       <input type="hidden" name="message_only" value="1" />
       <input type="submit" value="Send Message" />
@@ -201,7 +201,7 @@
     </form>
   </div>
   <a id="resizer" class="resizer" style="display:none;cursor:pointer">
-    <img src="/static/zippyplus.gif">
+    <img src="{{media_url}}zippyplus.gif">
   </a>
 {%endif%}
 
