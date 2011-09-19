@@ -1,5 +1,5 @@
 recursive-include leetveld/templates *.html
 recursive-include leetveld/templates *.txt
-recursive-include rietveld_helper/templates *.html
+recursive-include leetveld/rietveld_helper/templates *.html
 recursive-include leetveld/static *
 include leetveld/version.txt
