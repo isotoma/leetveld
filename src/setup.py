@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.11.1dev'
+version = '0.11.1'
 
 def long_description():
     def file_or_emptystring(filename):

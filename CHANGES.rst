@@ -1,10 +1,10 @@
 Leetveld
 ========
 
-0.11.1 (unreleased)
+0.11.1 (2011-09-19)
 -------------------
 
-- Nothing changed yet.
+- Tweaks to the production configuration
 
 
 0.11.0 (2011-09-19)
