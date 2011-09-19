@@ -1,0 +1,10 @@
+syntax: glob
+
+# ignore Rietveld checkout and symlinks in example dir
+examples/rietveld/codereview/
+examples/rietveld/dev.db
+examples/rietveld/gae2django/
+examples/rietveld/static/
+examples/rietveld/templates/
+examples/rietveld/upload.py
+examples/rietveld/rietveld.hg

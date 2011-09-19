@@ -1,5 +1,5 @@
-recursive-include codereview/templates *.html
-recursive-include codereview/templates *.txt
+recursive-include leetveld/templates *.html
+recursive-include leetveld/templates *.txt
 recursive-include rietveld_helper/templates *.html
-recursive-include codereview/static *
-include codereview/version.txt
+recursive-include leetveld/static *
+include leetveld/version.txt

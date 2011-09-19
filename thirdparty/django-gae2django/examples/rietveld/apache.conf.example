@@ -1,0 +1,19 @@
+<VirtualHost *:80>
+   ServerName codereview.example.com
+
+   # Logs
+   ErrorLog /var/rietveld/log/error.log
+   CustomLog /var/rietveld/log/access.log combined
+   LogLevel notice
+
+   # Django gives out static resources only in development mode
+   # Setting up static/ resource serving
+   Alias /static /var/rietveld/static
+   Alias /media /var/rietveld/django/contrib/admin/media
+
+   WSGIDaemonProcess codereview threads=5 user=codereview umask=0026 home=/var/rietveld display-name=wsgi:rietveld
+   WSGIProcessGroup codereview
+
+   WSGIScriptAlias / /var/rietveld/codereview.wsgi
+</VirtualHost>
+
