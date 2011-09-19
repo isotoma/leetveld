@@ -32,7 +32,7 @@ class FakeIssue(models.Model):
                                      verbose_name="Number of comments")
 
     class Meta:
-        db_table = 'codereview_issue'
+        db_table = 'leetveld_issue'
         verbose_name = "Issue"
         verbose_name_plural = "Issues"
 
@@ -50,7 +50,7 @@ class FakePatchSet(models.Model):
                                      verbose_name="Number of comments")
 
     class Meta:
-        db_table = 'codereview_patchset'
+        db_table = 'leetveld_patchset'
         verbose_name = "PatchSet"
         verbose_name_plural = "PatchSets"
 

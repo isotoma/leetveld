@@ -14,3 +14,8 @@ DATABASES = {
 }
 
 LOG_FILE = '/var/log/leetveld/leetveld.log'
+
+try:
+    from private_settings import *
+except ImportError:
+    pass

@@ -2,7 +2,7 @@ from django import template
 from django.db.models.signals import post_save
 from django.contrib.auth.models import AnonymousUser, User
 
-from codereview import library
+from leetveld import library
 from gae2django.utils import CallableString
 
 
@@ -36,7 +36,7 @@ def on_post_save_user(sender, **kwds):
         return
     if not isinstance(user.email, CallableString):
         user.email = CallableString(user.email)
-    from codereview import models
+    from leetveld import models
     account = models.Account.get_account_for_user(user)
     account.put()
 post_save.connect(on_post_save_user)

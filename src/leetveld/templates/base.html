@@ -45,7 +45,7 @@ var xsrfToken = '{{xsrf_token}}';
 var helpDisplayed = false;
 document.onclick = M_clickCommon;
 {%if issue%}
-var publish_link = "{%url codereview.views.publish issue.key.id%}";
+var publish_link = "{%url leetveld.views.publish issue.key.id%}";
 {%endif%}
 // -->
 </script>
@@ -158,7 +158,7 @@ var publish_link = "{%url codereview.views.publish issue.key.id%}";
 {%if user%}
 <b>{{user.email}} ({{user|nickname:"x"}})</b>
 |
-<a class="novisit" href="{%url codereview.views.settings%}">Settings</a>
+<a class="novisit" href="{%url leetveld.views.settings%}">Settings</a>
 |
 {%endif%}
 {%if is_dev%}
@@ -175,8 +175,8 @@ var publish_link = "{%url codereview.views.publish issue.key.id%}";
 <div class="counter">({{counter}})</div>
 <div class="mainmenu">
   {%block mainmenu%}
-  <a href="{%url codereview.views.index%}">Issues</a>
-  <a href="{%url codereview.views.repos %}">Repositories</a>
+  <a href="{%url leetveld.views.index%}">Issues</a>
+  <a href="{%url leetveld.views.repos %}">Repositories</a>
   {%endblock%}
 </div>
 <div class="mainmenu2">

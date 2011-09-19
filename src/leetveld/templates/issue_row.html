@@ -10,12 +10,12 @@
 </span>
 {%endif%}</td>
   <td align="right"><div class="subject"><a class="noul"
-         href="{%url codereview.views.show issue.key.id%}">{{issue.key.id}}</a>
+         href="{%url leetveld.views.show issue.key.id%}">{{issue.key.id}}</a>
      </div>
   </td>
   <td>
     <div class="subject">
-      <a class="noul" href="{%url codereview.views.show issue.key.id%}"
+      <a class="noul" href="{%url leetveld.views.show issue.key.id%}"
       id="issue-title-{{issue.key.id}}">{{issue.subject}}</a>
       {%if issue.closed and not closed_issues %} (Closed) {%endif%}
     </div>

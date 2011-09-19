@@ -18,10 +18,10 @@
 # NOTE: Must import *, since Django looks for things here, e.g. handler500.
 from django.conf.urls.defaults import *
 
-from codereview import feeds
+from leetveld import feeds
 
 urlpatterns = patterns(
-    'codereview.views',
+    'leetveld.views',
     (r'^$', 'index'),
     (r'^all$', 'all'),
     (r'^mine$', 'mine'),

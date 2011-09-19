@@ -18,7 +18,7 @@ login_warned = false;
 {%if user%}
 <!-- Form used by in-line comment JS; XXX filled in by JS code -->
 <form id="dainlineform" style="display: none;"
-      action="{%url codereview.views.inline_draft%}" method="post">
+      action="{%url leetveld.views.inline_draft%}" method="post">
   <div class="comment-border" name="form-container">
     <input type="hidden" name="snapshot" value="XXX">
     <input type="hidden" name="lineno" value="XXX">
@@ -43,7 +43,7 @@ login_warned = false;
     <span style="color:red">Side-by-side diff isn't available for this file because of its large size.</span>
   {%endifnotequal%}
   <div style="margin-top: .2em;">{%include "issue_star.html"%}
-    <b>Issue <a href="{%url codereview.views.show issue.key.id%}" onmouseover="M_showPopUp(this, 'popup-issue');" id="upCL">{{issue.key.id}}</a>:</b>
+    <b>Issue <a href="{%url leetveld.views.show issue.key.id%}" onmouseover="M_showPopUp(this, 'popup-issue');" id="upCL">{{issue.key.id}}</a>:</b>
   {{issue.subject}} {%if issue.closed %} (Closed) {%endif%}
   {%if issue.base%}<span class="extra">SVN Base: {{issue.base}}</span>{%endif%}</div>
   <div style="margin-top: .4em;">
@@ -63,7 +63,7 @@ login_warned = false;
     {%if user%}
     Double-click a line to add a draft in-line comment.
     <br><span style="color:red">Draft comments are only viewable by you;</span>
-    use <a href="{%url codereview.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
+    use <a href="{%url leetveld.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
     {%else%}
     Please Sign in to add in-line comments.
     {%endif%}
@@ -84,19 +84,19 @@ login_warned = false;
   </div>
   {%if not patch.no_base_file%}
   <div style="margin-top: 5px;">
-    <a href="{%url codereview.views.diff issue.key.id,patchset.key.id,patch.key.id%}{%urlappend_view_settings%}">
+    <a href="{%url leetveld.views.diff issue.key.id,patchset.key.id,patch.key.id%}{%urlappend_view_settings%}">
     View side by-side-diff with in-line comments</a>
   </div>
   {%endif%}
   <div style="margin-top: 5px;">
-    <a href="{%url codereview.views.download_patch issue.key.id,patchset.key.id,patch.key.id%}"
+    <a href="{%url leetveld.views.download_patch issue.key.id,patchset.key.id,patch.key.id%}"
        title="Download patch for {{patch.filename}}">
       Download patch
     </a>
   </div>
   {%if user%}
   <div style="margin-top: 5px;">
-    <a class="novisit" href="{%url codereview.views.publish issue.key.id%}">Publish+Mail
+    <a class="novisit" href="{%url leetveld.views.publish issue.key.id%}">Publish+Mail
     Comments</a> ('m')
     |
     <a class="novisit" href="javascript:draftMessage.dialog_show()">Edit draft message</a> ('M')
@@ -110,13 +110,13 @@ login_warned = false;
 <div class="codenav">
 {%if patch.prev%}
 <a id="prevFile"
-   href="{%url codereview.views.patch issue.key.id,patchset.key.id,patch.prev.key.id%}{%urlappend_view_settings%}">
+   href="{%url leetveld.views.patch issue.key.id,patchset.key.id,patch.prev.key.id%}{%urlappend_view_settings%}">
 &laquo; {{patch.prev.filename}}</a> ('k'){%else%}
 <span class="disabled">&laquo; no previous file</span>{%endif%}
 |
 {%if patch.next%}
 <a id="nextFile"
-   href="{%url codereview.views.patch issue.key.id,patchset.key.id,patch.next.key.id%}{%urlappend_view_settings%}">
+   href="{%url leetveld.views.patch issue.key.id,patchset.key.id,patch.next.key.id%}{%urlappend_view_settings%}">
 {{patch.next.filename}} &raquo;</a> ('j'){%else%}
 <span class="disabled">no next file &raquo;</span>{%endif%}
 |
@@ -134,7 +134,7 @@ login_warned = false;
 <div style="position:relative" id="table-top">
 
 {%if patch.is_binary%}
-<img src="{%url codereview.views.image issue.key.id,patchset.key.id,patch.key.id,1%}" />
+<img src="{%url leetveld.views.image issue.key.id,patchset.key.id,patch.key.id,1%}" />
 </pre>
 {%else%}
 <span id="hook-sel" style="display:none;"></span>
@@ -149,13 +149,13 @@ login_warned = false;
 <div class="codenav">
 {%if patch.prev%}
 <a id="prevFile"
-   href="{%url codereview.views.patch issue.key.id,patchset.key.id,patch.prev.key.id%}{%urlappend_view_settings%}">
+   href="{%url leetveld.views.patch issue.key.id,patchset.key.id,patch.prev.key.id%}{%urlappend_view_settings%}">
 &laquo; {{patch.prev.filename}}</a> ('k'){%else%}
 <span class="disabled">&laquo; no previous file</span>{%endif%}
 |
 {%if patch.next%}
 <a id="nextFile"
-   href="{%url codereview.views.patch issue.key.id,patchset.key.id,patch.next.key.id%}{%urlappend_view_settings%}">
+   href="{%url leetveld.views.patch issue.key.id,patchset.key.id,patch.next.key.id%}{%urlappend_view_settings%}">
 {{patch.next.filename}} &raquo;</a> ('j'){%else%}
 <span class="disabled">no next file &raquo;</span>{%endif%}
 </div>

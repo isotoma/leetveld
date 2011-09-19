@@ -1,89 +1,41 @@
 #! /usr/bin/env python
+#
+# Generic isotoma.stack.django config file
+#
+
 from optparse import OptionParser
-import subprocess
-import sys
 import os
 
-def get_version(path):
-    try:
-        p = subprocess.Popen([sys.executable, "setup.py", "-V"], stdout=subprocess.PIPE, cwd=path)
-        o, e = p.communicate()
-        return o.strip()
-    except:
-        return ""
-
-def get_name(path):
-    try:
-        p = subprocess.Popen(
-            [sys.executable, "setup.py", "--name"],
-            stdout=subprocess.PIPE,
-            cwd=path
-        )
-        o, e = p.communicate()
-        return o.strip()
-    except:
-        return ""
-
-version = get_version("src")
-name = get_name("src")
-config_dir = "isotoma/"
-
 parser = OptionParser()
-parser.add_option("-e", "--environment", dest="environment",
-                  help="What kind of deployment", default="dev")
-parser.add_option("-b", "--extra-config", dest="extraconfig",
-                  help="A cfg file to add to the buildout \"extends\".",
-                  default="")
-parser.add_option("-c", "--checkout", dest="checkout",
-                  help="Do not use a dist.isotoma.com egg, use this checkout",
-                  default=False, action="store_true")
-parser.add_option("-n", "--noindex", dest="noindex", action="store_true",
-                  help="Do not use our index server", default=False)
+parser.add_option('-e', '--environment', dest='environment',
+                  help='What kind of deployment?', default='dev')
+parser.add_option('-c', '--extraconfig', dest='extraconfig',
+                  help='Comma-separated config files to add to the buildout',
+                  default='')
+
 options, args = parser.parse_args()
 
-template =  "[buildout]\n" \
-            "%(index)s" \
-            "extends =\n" \
-            "%(extends)s\n" \
-            "cwd = %(cwd)s\n" \
-            "%(checkout)s\n" \
+template = '[buildout]\n' \
+           'extends =\n' \
+           '%(extends)s\n' \
+           'cwd = %(cwd)s\n'
 
 extends = [
-    config_dir + "base.cfg"
+    'isotoma/base.cfg',
 ]
 
-if options.environment != "dev":
-    template += "\n" \
-                "[versions]\n" \
-                "%(name)s = %(version)s\n"
-
+if options.environment != 'dev':
     extends.extend([
-        config_dir + "fullstack.cfg",
-        config_dir + "environment/%s/environment.cfg" % options.environment,
+        'isotoma/fullstack.cfg',
+        'isotoma/environment/%s/environment.cfg' % options.environment,
     ])
 
 if options.extraconfig:
     extends.append(options.extraconfig)
 
-if options.checkout:
-    checkout = "develop = ${buildout:cwd}/src"
-else:
-    checkout = ""
-
-if options.noindex:
-    index = ""
-else:
-    index = "index = http://dist.isotoma.com/index\n"
-
-print "Configuring to install %s==%s" % (name, version)
-
-open("buildout.cfg", "w").write(
+open('buildout.cfg', 'w').write(
     template % {
-        "extends": "\n".join("    %s" % e for e in extends),
-        "cwd": os.getcwd(),
-        "checkout": checkout,
-        "index": index,
-        "name": name,
-        "version": version,
+        'extends': '\n'.join('    %s' % e for e in extends),
+        'cwd': os.getcwd(),
     }
 )
