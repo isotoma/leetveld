@@ -2,6 +2,35 @@
 README for leetveld
 ===================
 
+What is Leetveld?
+=================
+
+Leetveld is the "rietveld" django app-engine project converted to vanilla django
+with the assistance of the django-gaedjango app and the rietveld_helper app,
+the first of which pretends to be google.appengine.api and google.appengine.ext
+by taking standard django objects, such as django.contrib.auth.models and makes
+them appear to be their app-engine equivalents.
+
+The rietveld-helper app, which comes with django-gae2django then does the rest
+of the work, plugging the project-level gaps with a coherent url configuration
+and some common utilities.
+
+Aside from this, we've applied a number of patches to get the /admin back-end
+working nicely, and to ensure that users must be logged in to view any code of
+any kind.
+
+Finally, the entire bundle has been productionised meaning that you can fairly
+effortlessly deploy this software.
+
+Versions
+========
+
+rietveld = 6bbee3d7523b...
+gae2django = 03e4e6...
+
+Usage
+=====
+
 Buildout setup
 ++++++++++++++
 
