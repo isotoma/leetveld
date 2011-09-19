@@ -108,4 +108,4 @@ RIETVELD_INCOMING_MAIL_ADDRESS = None
 
 RIETVELD_REVISION = '6bbee3d7523b'
 
-UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')
+UPLOAD_PY_SOURCE = os.path.join(MEDIA_ROOT, 'upload.py')
